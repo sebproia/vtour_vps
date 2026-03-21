@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fredoka, Nunito } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import ConvexClientProvider from "./ConvexClientProvider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fredoka = Fredoka({
+  variable: "--font-fredoka",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
 });
 
@@ -25,9 +27,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fredoka.variable} ${nunito.variable} bg-background text-foreground scroll-smooth`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="font-sans antialiased selection:bg-primary/30 min-h-screen">
+        <ClerkProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
+        </ClerkProvider>
+      </body>
     </html>
   );
 }
