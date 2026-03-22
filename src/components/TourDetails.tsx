@@ -194,7 +194,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                 <label className="text-lg font-bold font-display">Pin the Location</label>
                 {isDraft ? (
                   <MapPicker 
-                    onLocationSelect={(addr, lat, lng) => {
+                    onLocationSelect={(nameFromMap, addr, lat, lng) => {
+                      setNewName(nameFromMap);
                       setNewAddress(addr);
                       setNewCoordinate({ lat, lng });
                     }} 

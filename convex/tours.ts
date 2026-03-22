@@ -61,3 +61,37 @@ export const getTourRecap = query({
     return { tour, places: recapPlaces };
   }
 });
+
+export const deleteTour = mutation({
+  args: { tourId: v.id("tours"), organizerId: v.string() },
+  handler: async (ctx, args) => {
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour) throw new Error("Tour not found");
+    if (tour.organizerId !== args.organizerId) throw new Error("Unauthorized");
+
+    const places = await ctx.db
+      .query("places")
+      .withIndex("by_tour", (q) => q.eq("tourId", args.tourId))
+      .collect();
+
+    for (const place of places) {
+      const ratings = await ctx.db
+        .query("ratings")
+        .withIndex("by_place", (q) => q.eq("placeId", place._id))
+        .collect();
+      for (const r of ratings) await ctx.db.delete(r._id);
+
+      const photos = await ctx.db
+        .query("photos")
+        .withIndex("by_place", (q) => q.eq("placeId", place._id))
+        .collect();
+      for (const p of photos) {
+        await ctx.storage.delete(p.storageId);
+        await ctx.db.delete(p._id);
+      }
+
+      await ctx.db.delete(place._id);
+    }
+    await ctx.db.delete(args.tourId);
+  }
+});

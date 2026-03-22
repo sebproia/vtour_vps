@@ -7,10 +7,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Trash2 } from "lucide-react";
 
 export default function TourList({ organizerId }: { organizerId: string }) {
   const tours = useQuery(api.tours.getMyTours, { organizerId });
   const createTour = useMutation(api.tours.createTour);
+  const deleteTour = useMutation(api.tours.deleteTour);
   const [newTourName, setNewTourName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -75,11 +77,24 @@ export default function TourList({ organizerId }: { organizerId: string }) {
               <CardDescription className="text-lg font-medium">0 Stops planned</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <Link href={`/tour/${tour._id}`} className="block">
-                <Button variant="outline" className="w-full text-lg h-12 font-bold font-display border-2 rounded-xl border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors">
-                  Manage Tour
+              <div className="flex gap-2">
+                <Link href={`/tour/${tour._id}`} className="block flex-1">
+                  <Button variant="outline" className="w-full text-lg h-12 font-bold font-display border-2 rounded-xl border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors">
+                    Manage Tour
+                  </Button>
+                </Link>
+                <Button 
+                  variant="destructive" 
+                  className="h-12 w-12 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 border-2 border-transparent hover:border-red-300 transition-colors"
+                  onClick={async () => {
+                    if (confirm("Are you sure you want to delete this tour and all its memories?")) {
+                      await deleteTour({ tourId: tour._id, organizerId });
+                    }
+                  }}
+                >
+                  <Trash2 className="w-5 h-5" />
                 </Button>
-              </Link>
+              </div>
             </CardContent>
           </Card>
         ))}

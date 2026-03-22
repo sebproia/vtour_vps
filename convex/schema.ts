@@ -26,7 +26,8 @@ export default defineSchema({
   ratings: defineTable({
     placeId: v.id("places"),
     guestName: v.string(),
-    score: v.number(), // Note de 1 à 10
+    score: v.optional(v.number()), // Note de 1 à 10
+    emojiRating: v.optional(v.string()), // Rétrocompatibilité
     comment: v.optional(v.string()),
   }).index("by_place", ["placeId"]),
 
