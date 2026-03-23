@@ -22,7 +22,8 @@ export const addPlace = mutation({
         lat: v.number(),
         lng: v.number()
       })
-    )
+    ),
+    adminComment: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     // Get current places to determine the order
@@ -37,6 +38,7 @@ export const addPlace = mutation({
       address: args.address,
       description: args.description,
       coordinates: args.coordinates,
+      adminComment: args.adminComment,
       order: existingPlaces.length, // Put it at the end
     });
   },

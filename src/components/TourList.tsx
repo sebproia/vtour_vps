@@ -52,7 +52,7 @@ export default function TourList({ organizerId }: { organizerId: string }) {
           <Button 
             size="lg" 
             onClick={() => setIsCreating(true)}
-            className="h-14 px-8 text-xl rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_6px_0_oklch(0.5_0.15_190)] hover:shadow-[0_2px_0_oklch(0.5_0.15_190)] hover:translate-y-1 transition-all font-display font-black"
+            className="h-14 px-8 text-xl rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_6px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black"
           >
             + NEW TOUR
           </Button>

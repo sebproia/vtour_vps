@@ -12,6 +12,9 @@ import QRCode from "react-qr-code";
 import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useUser } from "@clerk/nextjs";
+import TastingCard from "@/components/TastingCard";
+import PhotoWall from "@/components/PhotoWall";
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
@@ -19,6 +22,8 @@ const MapPicker = dynamic(() => import("@/components/MapPicker"), {
 });
 
 export default function TourDetails({ tourId }: { tourId: string }) {
+  const { user } = useUser();
+  const adminName = user?.firstName || "L'Organisateur ✌️";
   const tId = tourId as Id<"tours">;
   
   const tour = useQuery(api.places.getTourInfo, { tourId: tId });
@@ -31,6 +36,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
 
   const [newName, setNewName] = useState("");
   const [newAddress, setNewAddress] = useState("");
+  const [newAdminComment, setNewAdminComment] = useState("");
 
   const [newCoordinate, setNewCoordinate] = useState<{lat: number, lng: number} | undefined>();
 
@@ -40,10 +46,12 @@ export default function TourDetails({ tourId }: { tourId: string }) {
       tourId: tId,
       name: newName,
       address: newAddress,
-      coordinates: newCoordinate
+      coordinates: newCoordinate,
+      adminComment: newAdminComment.trim() || undefined
     });
     setNewName("");
     setNewAddress("");
+    setNewAdminComment("");
     setNewCoordinate(undefined);
   };
 
@@ -96,18 +104,18 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           </Dialog>
 
           {isDraft && places.length > 0 && (
-            <Button size="lg" onClick={() => startLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_oklch(0.65_0.25_15)] hover:shadow-[0_2px_0_oklch(0.65_0.25_15)] hover:translate-y-1 transition-all font-display font-black">
+            <Button size="lg" onClick={() => startLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
               <Play className="mr-2 w-6 h-6" /> START LIVE
             </Button>
           )}
           {isLive && (
             <>
               {tour.currentStepIndex < places.length - 1 ? (
-                <Button size="lg" onClick={() => nextStep({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_6px_0_oklch(0.5_0.15_190)] hover:shadow-[0_2px_0_oklch(0.5_0.15_190)] hover:translate-y-1 transition-all font-display font-black">
+                <Button size="lg" onClick={() => nextStep({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_6px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
                   <FastForward className="mr-2 w-6 h-6" /> NEXT STOP
                 </Button>
               ) : (
-                <Button size="lg" onClick={() => endLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-green-500 text-white hover:bg-green-600 shadow-[0_6px_0_oklch(0.6_0.2_140)] hover:shadow-[0_2px_0_oklch(0.6_0.2_140)] hover:translate-y-1 transition-all font-display font-black">
+                <Button size="lg" onClick={() => endLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-green-500 text-white hover:bg-green-600 shadow-[0_6px_0_hsl(140,80%,40%)] hover:shadow-[0_2px_0_hsl(140,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
                   <Flag className="mr-2 w-6 h-6" /> END TOUR
                 </Button>
               )}
@@ -115,7 +123,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           )}
           {tour.status === "completed" && (
             <Link href={`/recap/${tourId}`}>
-              <Button size="lg" className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_oklch(0.65_0.25_15)] hover:shadow-[0_2px_0_oklch(0.65_0.25_15)] hover:translate-y-1 transition-all font-display font-black w-full md:w-auto">
+              <Button size="lg" className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all font-display font-black w-full md:w-auto">
                 VIEW RECAP 📸
               </Button>
             </Link>
@@ -137,11 +145,11 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               
               return (
                 <Card key={place._id} className={`border-4 rounded-[1.5rem] overflow-hidden transition-all relative ${
-                  isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg scale-[1.02]" : 
+                  isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg scale-[1.02] z-10" : 
                   isPassed ? "border-muted bg-muted/20 opacity-70" :
                   "border-border bg-card"
                 }`}>
-                  <div className="flex p-4 gap-6 items-center">
+                  <div className="flex p-4 md:p-6 gap-4 md:gap-6 items-start">
                     <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-4 font-display font-black text-xl ${
                       isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" : 
                       isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" : 
@@ -153,11 +161,31 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                       <h4 className={`text-2xl font-bold font-display ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                         {place.name}
                       </h4>
+                      {place.adminComment && (
+                        <p className="text-primary font-medium mt-1">💡 {place.adminComment}</p>
+                      )}
                       <p className="text-muted-foreground text-lg flex items-center gap-1 mt-1">
                         <Navigation className="w-4 h-4" /> {place.address}
                       </p>
+                      {tour.status !== "completed" && place.coordinates && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-3 rounded-xl border-2 font-bold flex items-center gap-1"
+                          onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank')}
+                        >
+                          <Navigation className="w-4 h-4" /> Itinéraire
+                        </Button>
+                      )}
+                      
+                      {isCurrentStep && (
+                        <div className="mt-8 border-t-4 border-secondary/20 pt-6 space-y-8">
+                          <TastingCard placeId={place._id} guestName={adminName} />
+                          <PhotoWall placeId={place._id} guestName={adminName} />
+                        </div>
+                      )}
                     </div>
-                    {isPassed && <CheckCircle className="w-8 h-8 text-green-500" />}
+                    {isPassed && <CheckCircle className="w-8 h-8 text-green-500 absolute top-4 right-4" />}
                   </div>
                 </Card>
               );
@@ -206,15 +234,27 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   </div>
                 )}
                 {newAddress && (
-                  <div className="p-3 bg-primary/10 rounded-xl border-2 border-primary/20 flex gap-2 items-center">
-                    <MapPin className="text-primary flex-shrink-0" />
-                    <span className="text-sm font-medium">{newAddress}</span>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-primary/10 rounded-xl border-2 border-primary/20 flex gap-2 items-center">
+                      <MapPin className="text-primary flex-shrink-0" />
+                      <span className="text-sm font-medium">{newAddress}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-lg font-bold font-display">Plat recommandé (Optionnel)</label>
+                      <Input 
+                        placeholder="Ex: Prenez le menu signature !" 
+                        className="h-14 text-lg rounded-xl border-2"
+                        value={newAdminComment}
+                        onChange={(e) => setNewAdminComment(e.target.value)}
+                        disabled={!isDraft}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
               <Button 
                 onClick={handleAddPlace} 
-                className="w-full h-14 text-xl rounded-xl font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_0_oklch(0.65_0.25_15)] hover:shadow-[0_2px_0_oklch(0.65_0.25_15)] hover:translate-y-1 transition-all"
+                className="w-full h-14 text-xl rounded-xl font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all"
                 disabled={!isDraft || !newName.trim() || !newAddress.trim()}
               >
                 ADD TO TOUR

@@ -33,7 +33,7 @@ export default async function Home() {
             <p className="text-2xl font-medium text-white/90">Good vibes & great food. 🍩</p>
           </div>
           <SignInButton mode="modal">
-            <Button size="lg" className="w-full text-xl h-16 rounded-2xl font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-transform hover:scale-105 shadow-[0_8px_0_oklch(0.5_0.15_190)] hover:shadow-[0_4px_0_oklch(0.5_0.15_190)] hover:translate-y-1">
+            <Button size="lg" className="w-full text-xl h-16 rounded-2xl font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-transform hover:scale-105 shadow-[0_8px_0_hsl(190,80%,40%)] hover:shadow-[0_4px_0_hsl(190,80%,40%)] hover:translate-y-1">
               START ORGANIZING
             </Button>
           </SignInButton>

@@ -21,6 +21,7 @@ export default defineSchema({
         lng: v.number(),
       })
     ),
+    adminComment: v.optional(v.string()),
   }).index("by_tour", ["tourId"]),
 
   ratings: defineTable({

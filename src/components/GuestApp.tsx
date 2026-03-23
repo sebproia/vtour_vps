@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
 import { Camera, ImagePlus } from "lucide-react";
+import TastingCard from "@/components/TastingCard";
+import PhotoWall from "@/components/PhotoWall";
 
 const EMOJIS = ["🌮", "🍕", "🍔", "🍣", "🔥", "🤯", "🤤", "🤢", "🤩"];
 const SCORES = Array.from({ length: 10 }, (_, i) => i + 1);
@@ -67,7 +69,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
           <Button 
             onClick={joinTour}
             disabled={!name.trim()}
-            className="w-full h-16 text-2xl font-display font-black bg-secondary text-secondary-foreground rounded-2xl hover:bg-secondary/90 shadow-[0_6px_0_oklch(0.5_0.15_190)] hover:shadow-[0_2px_0_oklch(0.5_0.15_190)] hover:translate-y-1 transition-all"
+            className="w-full h-16 text-2xl font-display font-black bg-secondary text-secondary-foreground rounded-2xl hover:bg-secondary/90 shadow-[0_6px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all"
           >
             LET'S EAT!
           </Button>
@@ -103,12 +105,30 @@ export default function GuestApp({ tourId }: { tourId: string }) {
         <div className="text-center space-y-2 mt-8">
           <h2 className="text-5xl font-display font-black text-foreground drop-shadow-sm leading-none">{currentPlace.name}</h2>
           <p className="text-xl text-muted-foreground font-medium">{currentPlace.address}</p>
+          {currentPlace.adminComment && (
+            <div className="inline-block mt-4 bg-primary/10 border-2 border-primary/20 text-primary px-4 py-2 rounded-2xl">
+              <span className="font-bold text-lg">💡 Tip :</span> <span className="text-lg font-medium">{currentPlace.adminComment}</span>
+            </div>
+          )}
         </div>
 
         <TastingCard placeId={currentPlace._id} guestName={name} />
         
         {/* Photo Wall Section */}
         <PhotoWall placeId={currentPlace._id} guestName={name} />
+
+        {/* Mystery Mode / Route */}
+        {tour.currentStepIndex < places.length - 1 && (
+          <div className="mt-12 text-center p-6 bg-card rounded-[2rem] border-4 border-dashed border-muted relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10"></div>
+            <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-500">🤫</div>
+            <h3 className="text-2xl font-display font-black text-foreground relative z-20">Prochaine adresse...</h3>
+            <p className="text-xl font-bold bg-primary text-primary-foreground px-4 py-1 rounded-full inline-block mt-2 relative z-20 transform -rotate-2">Mystère !</p>
+            <div className="mt-4 blur-sm opacity-50 user-select-none flex justify-center w-full">
+              <div className="h-4 w-3/4 bg-muted rounded"></div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -122,7 +142,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
         You made it to the end.<br/>Hope you enjoyed the food!
       </p>
       <Link href={`/recap/${tourId}`} className="w-full">
-        <Button className="w-full h-16 text-2xl font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_6px_0_oklch(0.65_0.25_15)] hover:translate-y-1 transition-all">
+        <Button className="w-full h-16 text-2xl font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all">
           VIEW PHOTOS & RECAP 📸
         </Button>
       </Link>
@@ -130,141 +150,4 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   );
 }
 
-// Photo Wall Child Component
-function PhotoWall({ placeId, guestName }: { placeId: Id<"places">, guestName: string }) {
-  const photos = useQuery(api.photos.getPhotosByPlace, { placeId });
-  const generateUploadUrl = useMutation(api.photos.generateUploadUrl);
-  const savePhoto = useMutation(api.photos.savePhoto);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      // 1. Get short-lived upload URL
-      const postUrl = await generateUploadUrl();
-      
-      // 2. Upload file
-      const result = await fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      const { storageId } = await result.json();
-      
-      // 3. Save reference in DB
-      await savePhoto({
-        placeId,
-        uploaderName: guestName,
-        storageId,
-      });
-    } catch (error) {
-      console.error("Upload failed:", error);
-      alert("Oops! Impossible de charger la photo.");
-    } finally {
-      setIsUploading(false);
-      // Reset input
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  return (
-    <Card className="border-4 border-primary/20 bg-card rounded-[2rem] shadow-xl mt-8">
-      <CardContent className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-2xl font-display font-black text-foreground flex items-center gap-2">
-            <Camera className="text-primary w-6 h-6" /> Live Feed
-          </h3>
-          <Button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="rounded-xl font-bold font-display shadow-[0_4px_0_oklch(0.5_0.15_190)] hover:translate-y-1 hover:shadow-[0_2px_0_oklch(0.5_0.15_190)] transition-all bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-          >
-            {isUploading ? "Uploading... ⏳" : <><ImagePlus className="mr-2 w-5 h-5" /> Add Photo</>}
-          </Button>
-          <input 
-            type="file" 
-            accept="image/*" 
-            ref={fileInputRef} 
-            className="hidden" 
-            onChange={handleUpload} 
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {photos?.map((photo) => (
-            <div key={photo._id} className="relative aspect-square border-4 border-border rounded-2xl overflow-hidden shadow-sm group">
-              {photo.url && <Image src={photo.url} alt="Food photo" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />}
-              <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                <span className="text-white text-xs font-bold shadow-black drop-shadow-md">📸 by {photo.uploaderName}</span>
-              </div>
-            </div>
-          ))}
-
-          {photos && photos.length === 0 && (
-            <div className="col-span-2 text-center py-8 text-muted-foreground/50 border-4 border-dashed rounded-2xl border-muted">
-              <span className="text-4xl block mb-2">📸</span>
-              <p className="font-medium">No photos yet.<br/>Be the first to snap this dish!</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Child Component for the Rating UI
-function TastingCard({ placeId, guestName }: { placeId: Id<"places">, guestName: string }) {
-  const addRating = useMutation(api.ratings.addRating);
-  const ratings = useQuery(api.ratings.getRatingsByPlace, { placeId });
-  
-  const hasRated = ratings?.some(r => r.guestName === guestName);
-
-  if (ratings === undefined) return null;
-
-  if (hasRated) {
-    return (
-      <Card className="border-4 border-green-500/30 bg-green-500/5 rounded-[2rem] shadow-xl mt-8">
-        <CardContent className="p-8 text-center space-y-4">
-          <div className="text-5xl">✅</div>
-          <h3 className="text-3xl font-display font-black text-green-700">Noted!</h3>
-          <p className="text-lg font-medium text-green-700/80">Wait for the organizer to move to the next stop.</p>
-          
-          <div className="mt-6 p-4 bg-white rounded-2xl border-4 border-green-500/20 text-left">
-            <h4 className="font-display font-bold text-lg mb-2">Group Vibe:</h4>
-            <div className="flex flex-wrap gap-2">
-              {ratings.map(r => (
-                <div key={r._id} className="bg-muted px-3 py-1 rounded-full font-medium text-lg flex gap-2 items-center">
-                  <span className="font-bold text-primary">{r.score}/10</span> <span className="text-sm opacity-70">{r.guestName}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="border-4 border-secondary rounded-[2rem] bg-secondary/5 shadow-2xl mt-8 transform hover:scale-[1.02] transition-transform">
-      <CardContent className="p-6 space-y-6">
-        <h3 className="text-3xl font-display font-black text-center text-foreground">How is the food?</h3>
-        <div className="grid grid-cols-5 gap-3">
-          {SCORES.map(score => (
-            <Button 
-              key={score}
-              onClick={() => addRating({ placeId, guestName, score })}
-              className="text-2xl h-16 bg-card hover:bg-accent border-4 border-border rounded-2xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1 font-display font-black"
-              variant="outline"
-            >
-              {score}
-            </Button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
