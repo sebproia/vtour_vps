@@ -3,16 +3,17 @@ import GuestApp from "@/components/GuestApp";
 export default async function JoinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return (
-    <div className="min-h-screen bg-background relative font-sans text-foreground">
+    <div className="min-h-screen bg-[hsl(330,80%,60%)] relative overflow-x-hidden">
+      {/* Checkered pattern like landing page */}
       <div 
-        className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+        className="absolute inset-0 opacity-[0.06] pointer-events-none" 
         style={{
-          backgroundImage: "linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000)",
-          backgroundSize: "40px 40px",
-          backgroundPosition: "0 0, 20px 20px"
+          backgroundImage: "linear-gradient(45deg, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff), linear-gradient(45deg, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff)",
+          backgroundSize: "30px 30px",
+          backgroundPosition: "0 0, 15px 15px"
         }}
       />
-      <main className="relative z-10 p-4 max-w-md mx-auto h-screen overflow-y-auto pb-20">
+      <main className="relative z-10 px-4 py-6 w-full max-w-md mx-auto">
         <GuestApp tourId={id} />
       </main>
     </div>

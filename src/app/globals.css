@@ -148,4 +148,17 @@
   html {
     @apply font-sans;
   }
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
 }
