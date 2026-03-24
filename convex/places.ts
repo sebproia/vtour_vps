@@ -4,10 +4,11 @@ import { v } from "convex/values";
 export const getPlacesByTour = query({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const places = await ctx.db
       .query("places")
       .withIndex("by_tour", (q) => q.eq("tourId", args.tourId))
       .collect();
+    return places.sort((a, b) => a.order - b.order);
   },
 });
 
