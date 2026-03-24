@@ -95,3 +95,38 @@ export const deleteTour = mutation({
     await ctx.db.delete(args.tourId);
   }
 });
+
+export const duplicateTour = mutation({
+  args: { tourId: v.id("tours"), organizerId: v.string() },
+  handler: async (ctx, args) => {
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour) throw new Error("Tour not found");
+    if (tour.organizerId !== args.organizerId) throw new Error("Unauthorized");
+
+    const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+    const newTourId = await ctx.db.insert("tours", {
+      name: `${tour.name} (${today})`,
+      organizerId: args.organizerId,
+      status: "draft",
+      currentStepIndex: 0,
+    });
+
+    const places = await ctx.db
+      .query("places")
+      .withIndex("by_tour", (q) => q.eq("tourId", args.tourId))
+      .collect();
+
+    for (const place of places) {
+      await ctx.db.insert("places", {
+        tourId: newTourId,
+        name: place.name,
+        address: place.address,
+        order: place.order,
+        coordinates: place.coordinates,
+        adminComment: place.adminComment,
+      });
+    }
+
+    return newTourId;
+  }
+});
