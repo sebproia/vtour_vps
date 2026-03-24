@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, Camera, X } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 
 const ExportButtons = dynamic(() => import("./ExportButtons"), { ssr: false });
 
@@ -50,11 +51,13 @@ export default function TourRecap({ tourId }: { tourId: string }) {
             <Link href="/" className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20 transition-colors border-2 border-border hidden md:flex">
               <ArrowLeft className="w-6 h-6" />
             </Link>
-            <span className="text-6xl inline-block mb-4">🏆</span>
-            <h1 className="text-5xl md:text-6xl font-display font-black text-primary drop-shadow-sm leading-tight">
+            <div className="flex justify-center mb-6">
+              <Image src="/donut.png" alt="Vitour Logo" width={100} height={100} className="drop-shadow-sm mix-blend-multiply contrast-125" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-display font-black text-primary drop-shadow-sm leading-tight">
               {recap.tour.name}
             </h1>
-            <p className="text-2xl text-muted-foreground font-medium">The official Travelogue</p>
+            <p className="text-xl md:text-2xl text-muted-foreground font-medium">The official Travelogue</p>
           </div>
 
           <div className="space-y-16 mt-12">
@@ -75,25 +78,25 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                       {index + 1}
                     </div>
                     
-                    <Card className="flex-grow border-4 border-primary/20 bg-card rounded-[2rem] shadow-xl overflow-hidden hover:shadow-primary/30 transition-shadow">
-                      <div className="p-6 md:p-8 border-b-4 border-border bg-primary/5">
+                    <Card className="flex-grow border-2 border-primary/20 bg-card rounded-[1.5rem] shadow-lg overflow-hidden hover:shadow-primary/30 transition-shadow">
+                      <div className="p-4 md:p-6 border-b-2 border-border bg-primary/5">
                         <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                           <div>
-                            <h2 className="text-3xl md:text-4xl font-display font-black text-foreground leading-tight">{place.name}</h2>
-                            <p className="text-lg md:text-xl text-muted-foreground font-medium mt-2">{place.address}</p>
+                            <h2 className="text-2xl md:text-3xl font-display font-black text-foreground leading-tight">{place.name}</h2>
+                            <p className="text-md md:text-lg text-muted-foreground font-medium mt-1">{place.address}</p>
                           </div>
                           {averageScore !== "N/A" && (
-                            <div className="bg-white px-4 py-2 rounded-2xl border-4 border-primary/20 shadow-sm flex items-center gap-2 self-start">
-                              <span className="text-3xl font-black text-primary">{averageScore}</span>
-                              <span className="font-bold text-muted-foreground text-sm">/10 Avg</span>
+                            <div className="bg-white px-3 py-1.5 rounded-2xl border-2 border-primary/20 shadow-sm flex items-center gap-2 self-start">
+                              <span className="text-2xl font-black text-primary">{averageScore}</span>
+                              <span className="font-bold text-muted-foreground text-xs">/10 Avg</span>
                             </div>
                           )}
                         </div>
                         
                         {place.ratings.length > 0 && (
-                          <div className="mt-6 flex flex-wrap gap-2">
+                          <div className="mt-4 flex flex-wrap gap-2">
                             {place.ratings.map(r => (
-                              <div key={r._id} className="bg-background border-2 border-border px-3 py-1.5 rounded-full font-medium text-sm flex gap-2 items-center">
+                              <div key={r._id} className="bg-background border-2 border-border px-3 py-1 rounded-full font-medium text-xs flex gap-2 items-center">
                                 <span className="font-bold text-primary">
                                   {r.score ? `${r.score}/10` : (r as Record<string, unknown>).emojiRating as string || "N/A"}
                                 </span> 
@@ -104,8 +107,8 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                         )}
                       </div>
                       
-                      <CardContent className="p-6 md:p-8 bg-muted/30">
-                        <h3 className="text-xl font-display font-bold mb-4 flex items-center gap-2">
+                      <CardContent className="p-4 md:p-6 bg-muted/30">
+                        <h3 className="text-lg font-display font-bold mb-3 flex items-center gap-2">
                           <Camera className="text-primary" /> Photos ({place.photos.length})
                         </h3>
                         

@@ -7,12 +7,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2 } from "lucide-react";
+import { Trash2, Copy } from "lucide-react";
 
 export default function TourList({ organizerId }: { organizerId: string }) {
   const tours = useQuery(api.tours.getMyTours, { organizerId });
   const createTour = useMutation(api.tours.createTour);
   const deleteTour = useMutation(api.tours.deleteTour);
+  const duplicateTour = useMutation(api.tours.duplicateTour);
   const [newTourName, setNewTourName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -84,13 +85,28 @@ export default function TourList({ organizerId }: { organizerId: string }) {
                   </Button>
                 </Link>
                 <Button 
+                  variant="outline" 
+                  className="h-12 w-12 rounded-xl border-2 hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    if (confirm("Dupliquer ce tour ? (Les notes et photos ne seront pas copiées)")) {
+                      await duplicateTour({ tourId: tour._id, organizerId });
+                    }
+                  }}
+                  title="Dupliquer le tour"
+                >
+                  <Copy className="w-5 h-5" />
+                </Button>
+                <Button 
                   variant="destructive" 
                   className="h-12 w-12 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 border-2 border-transparent hover:border-red-300 transition-colors"
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.preventDefault();
                     if (confirm("Are you sure you want to delete this tour and all its memories?")) {
                       await deleteTour({ tourId: tour._id, organizerId });
                     }
                   }}
+                  title="Supprimer le tour"
                 >
                   <Trash2 className="w-5 h-5" />
                 </Button>

@@ -6,6 +6,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import PhotoWall from "@/components/PhotoWall";
 
 const SCORES = Array.from({ length: 10 }, (_, i) => i + 1);
 
@@ -42,6 +43,10 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               ))}
             </div>
           </div>
+          
+          <div className="mt-8 pt-6 border-t-4 border-green-500/20">
+            <PhotoWall placeId={placeId} guestName={guestName} />
+          </div>
         </CardContent>
       </Card>
     );
@@ -61,24 +66,42 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
 
   return (
     <Card className="border-4 border-secondary rounded-[2rem] bg-secondary/5 shadow-2xl mt-8 transition-all">
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="p-4 sm:p-6 space-y-6">
         <h3 className="text-3xl font-display font-black text-center text-foreground">How is the food?</h3>
         
-        <div className="grid grid-cols-5 gap-3">
-          {SCORES.map(score => (
-            <Button 
-              key={score}
-              onClick={() => setSelectedScore(score)}
-              className={`text-2xl h-16 border-4 rounded-2xl shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
-                selectedScore === score 
-                  ? "bg-primary text-primary-foreground border-primary scale-105" 
-                  : "bg-card hover:bg-accent border-border text-foreground"
-              }`}
-              variant="outline"
-            >
-              {score}
-            </Button>
-          ))}
+        <div className="flex flex-col gap-3 max-w-sm mx-auto w-full">
+          <div className="flex justify-between gap-2">
+            {SCORES.slice(0, 5).map(score => (
+              <Button 
+                key={score}
+                onClick={() => setSelectedScore(score)}
+                className={`flex-1 h-14 md:h-16 px-0 text-xl md:text-2xl border-[3px] md:border-4 rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
+                  selectedScore === score 
+                    ? "bg-primary text-primary-foreground border-primary scale-110" 
+                    : "bg-card hover:bg-accent border-border text-foreground"
+                }`}
+                variant="outline"
+              >
+                {score}
+              </Button>
+            ))}
+          </div>
+          <div className="flex justify-between gap-2">
+            {SCORES.slice(5, 10).map(score => (
+              <Button 
+                key={score}
+                onClick={() => setSelectedScore(score)}
+                className={`flex-1 h-14 md:h-16 px-0 text-xl md:text-2xl border-[3px] md:border-4 rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
+                  selectedScore === score 
+                    ? "bg-primary text-primary-foreground border-primary scale-110" 
+                    : "bg-card hover:bg-accent border-border text-foreground"
+                }`}
+                variant="outline"
+              >
+                {score}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {selectedScore !== null && (
@@ -102,6 +125,10 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
             </Button>
           </div>
         )}
+        
+        <div className="mt-8 pt-6 border-t-4 border-secondary/20">
+          <PhotoWall placeId={placeId} guestName={guestName} />
+        </div>
       </CardContent>
     </Card>
   );

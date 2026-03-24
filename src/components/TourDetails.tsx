@@ -9,12 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag } from "lucide-react";
+import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, ArrowUpDown, Loader2, GripVertical } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUser } from "@clerk/nextjs";
 import TastingCard from "@/components/TastingCard";
-import PhotoWall from "@/components/PhotoWall";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
@@ -33,12 +33,37 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const startLiveMode = useMutation(api.places.startLiveMode);
   const nextStep = useMutation(api.places.nextStep);
   const endLiveMode = useMutation(api.places.endLiveMode);
+  const optimizeRoute = useMutation(api.places.optimizeRoute);
+  const reorderPlacesMutation = useMutation(api.places.reorderPlaces);
 
   const [newName, setNewName] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [newAdminComment, setNewAdminComment] = useState("");
-
   const [newCoordinate, setNewCoordinate] = useState<{lat: number, lng: number} | undefined>();
+  const [mapPickerKey, setMapPickerKey] = useState(0);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+
+  const handleOptimize = async () => {
+    setIsOptimizing(true);
+    try {
+      await optimizeRoute({ tourId: tId });
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const onDragEnd = async (result: DropResult) => {
+    if (!places) return;
+    if (!result.destination || result.source.index === result.destination.index) return;
+    
+    const items = Array.from(places);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    // Create optimistic updates right away to avoid visual lag before server response (optional but good)
+    const updates = items.map((item, index) => ({ _id: item._id, order: index }));
+    await reorderPlacesMutation({ tourId: tId, updates });
+  };
 
   const handleAddPlace = async () => {
     if (!newName.trim() || !newAddress.trim()) return;
@@ -53,6 +78,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
     setNewAddress("");
     setNewAdminComment("");
     setNewCoordinate(undefined);
+    setMapPickerKey(k => k + 1);
   };
 
   if (tour === undefined || places === undefined) {
@@ -104,9 +130,16 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           </Dialog>
 
           {isDraft && places.length > 0 && (
-            <Button size="lg" onClick={() => startLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
-              <Play className="mr-2 w-6 h-6" /> START LIVE
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button size="lg" onClick={() => startLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
+                <Play className="mr-2 w-6 h-6" /> START LIVE
+              </Button>
+              {places.length > 2 && (
+                <Button size="sm" onClick={handleOptimize} disabled={isOptimizing} title="Optimize Route" className="h-12 w-12 rounded-2xl bg-amber-500 text-amber-foreground hover:bg-amber-600 shadow-[0_4px_0_hsl(45,90%,40%)] hover:translate-y-1 transition-all flex items-center justify-center">
+                  {isOptimizing ? <Loader2 className="animate-spin w-5 h-5" /> : <ArrowUpDown className="w-5 h-5" />}
+                </Button>
+              )}
+            </div>
           )}
           {isLive && (
             <>
@@ -139,57 +172,92 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           </h3>
           
           <div className="space-y-4">
-            {places.map((place, index) => {
-              const isCurrentStep = isLive && tour.currentStepIndex === place.order;
-              const isPassed = tour.currentStepIndex > place.order || tour.status === "completed";
-              
-              return (
-                <Card key={place._id} className={`border-4 rounded-[1.5rem] overflow-hidden transition-all relative ${
-                  isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg scale-[1.02] z-10" : 
-                  isPassed ? "border-muted bg-muted/20 opacity-70" :
-                  "border-border bg-card"
-                }`}>
-                  <div className="flex p-4 md:p-6 gap-4 md:gap-6 items-start">
-                    <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-4 font-display font-black text-xl ${
-                      isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" : 
-                      isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" : 
-                      "bg-background text-foreground border-border"
-                    }`}>
-                      {place.order + 1}
-                    </div>
-                    <div className="flex-grow">
-                      <h4 className={`text-2xl font-bold font-display ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                        {place.name}
-                      </h4>
-                      {place.adminComment && (
-                        <p className="text-primary font-medium mt-1">💡 {place.adminComment}</p>
-                      )}
-                      <p className="text-muted-foreground text-lg flex items-center gap-1 mt-1">
-                        <Navigation className="w-4 h-4" /> {place.address}
-                      </p>
-                      {tour.status !== "completed" && place.coordinates && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-3 rounded-xl border-2 font-bold flex items-center gap-1"
-                          onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank')}
-                        >
-                          <Navigation className="w-4 h-4" /> Itinéraire
-                        </Button>
-                      )}
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="places-list">
+                {(provided) => (
+                  <div 
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-4"
+                  >
+                    {places.map((place, index) => {
+                      const isCurrentStep = isLive && tour.currentStepIndex === place.order;
+                      const isPassed = tour.currentStepIndex > place.order || tour.status === "completed";
                       
-                      {isCurrentStep && (
-                        <div className="mt-8 border-t-4 border-secondary/20 pt-6 space-y-8">
-                          <TastingCard placeId={place._id} guestName={adminName} />
-                          <PhotoWall placeId={place._id} guestName={adminName} />
-                        </div>
-                      )}
-                    </div>
-                    {isPassed && <CheckCircle className="w-8 h-8 text-green-500 absolute top-4 right-4" />}
+                      return (
+                        <Draggable 
+                          key={place._id} 
+                          draggableId={place._id} 
+                          index={index}
+                          isDragDisabled={!isDraft}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              style={{ ...provided.draggableProps.style }}
+                            >
+                              <Card className={`border-4 rounded-[1.5rem] overflow-hidden transition-all relative ${
+                                isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg scale-[1.02] z-10" : 
+                                isPassed ? "border-muted bg-muted/20 opacity-70" :
+                                "border-border bg-card"
+                              } ${snapshot.isDragging ? "shadow-2xl ring-4 ring-primary scale-105 z-50" : ""}`}>
+                                <div className="flex p-4 md:p-6 gap-4 md:gap-6 items-start">
+                                  {isDraft && (
+                                    <div 
+                                      className="pt-2 -ml-2 text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing transition-colors"
+                                      {...provided.dragHandleProps}
+                                    >
+                                      <GripVertical className="w-6 h-6" />
+                                    </div>
+                                  )}
+                                  <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-4 font-display font-black text-xl ${
+                                    isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" : 
+                                    isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" : 
+                                    "bg-background text-foreground border-border"
+                                  }`}>
+                                    {place.order + 1}
+                                  </div>
+                                  <div className="flex-grow">
+                                    <h4 className={`text-2xl font-bold font-display ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                                      {place.name}
+                                    </h4>
+                                    {place.adminComment && (
+                                      <p className="text-primary font-medium mt-1">💡 {place.adminComment}</p>
+                                    )}
+                                    <p className="text-muted-foreground text-lg flex items-center gap-1 mt-1">
+                                      <Navigation className="w-4 h-4" /> {place.address}
+                                    </p>
+                                    {tour.status !== "completed" && place.coordinates && (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="mt-3 rounded-xl border-2 font-bold flex items-center gap-1"
+                                        onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank')}
+                                      >
+                                        <Navigation className="w-4 h-4" /> Itinéraire
+                                      </Button>
+                                    )}
+                                    
+                                    {isCurrentStep && (
+                                      <div className="mt-8 border-t-4 border-secondary/20 pt-6 space-y-8">
+                                        <TastingCard placeId={place._id} guestName={adminName} />
+                                      </div>
+                                    )}
+                                  </div>
+                                  {isPassed && <CheckCircle className="w-8 h-8 text-green-500 absolute top-4 right-4" />}
+                                </div>
+                              </Card>
+                            </div>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {provided.placeholder}
                   </div>
-                </Card>
-              );
-            })}
+                )}
+              </Droppable>
+            </DragDropContext>
 
             {places.length === 0 && (
               <div className="text-center py-12 bg-muted/20 rounded-[2rem] border-4 border-dashed border-muted">
@@ -215,13 +283,14 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   className="h-14 text-lg rounded-xl border-2"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  disabled={!isDraft}
+                  disabled={tour.status === "completed"}
                 />
               </div>
               <div className="space-y-4">
                 <label className="text-lg font-bold font-display">Pin the Location</label>
-                {isDraft ? (
+                {tour.status !== "completed" ? (
                   <MapPicker 
+                    key={mapPickerKey}
                     onLocationSelect={(nameFromMap, addr, lat, lng) => {
                       setNewName(nameFromMap);
                       setNewAddress(addr);
@@ -230,7 +299,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   />
                 ) : (
                   <div className="h-[200px] w-full bg-muted rounded-xl flex items-center justify-center font-medium opacity-50 border-2">
-                    Map disabled during live tour
+                    Tour is completed
                   </div>
                 )}
                 {newAddress && (
@@ -246,7 +315,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                         className="h-14 text-lg rounded-xl border-2"
                         value={newAdminComment}
                         onChange={(e) => setNewAdminComment(e.target.value)}
-                        disabled={!isDraft}
+                        disabled={tour.status === "completed"}
                       />
                     </div>
                   </div>
@@ -255,11 +324,11 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               <Button 
                 onClick={handleAddPlace} 
                 className="w-full h-14 text-xl rounded-xl font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all"
-                disabled={!isDraft || !newName.trim() || !newAddress.trim()}
+                disabled={tour.status === "completed" || !newName.trim() || !newAddress.trim()}
               >
                 ADD TO TOUR
               </Button>
-              {!isDraft && <p className="text-center text-sm text-muted-foreground font-medium">Cannot edit places while tour is live.</p>}
+              {tour.status === "completed" && <p className="text-center text-sm text-muted-foreground font-medium">Tour is completed. Cannot add more places.</p>}
             </CardContent>
           </Card>
         </div>

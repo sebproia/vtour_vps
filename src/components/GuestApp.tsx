@@ -11,7 +11,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Camera, ImagePlus } from "lucide-react";
 import TastingCard from "@/components/TastingCard";
-import PhotoWall from "@/components/PhotoWall";
 
 const EMOJIS = ["🌮", "🍕", "🍔", "🍣", "🔥", "🤯", "🤤", "🤢", "🤩"];
 const SCORES = Array.from({ length: 10 }, (_, i) => i + 1);
@@ -113,9 +112,6 @@ export default function GuestApp({ tourId }: { tourId: string }) {
         </div>
 
         <TastingCard placeId={currentPlace._id} guestName={name} />
-        
-        {/* Photo Wall Section */}
-        <PhotoWall placeId={currentPlace._id} guestName={name} />
 
         {/* Mystery Mode / Route */}
         {tour.currentStepIndex < places.length - 1 && (

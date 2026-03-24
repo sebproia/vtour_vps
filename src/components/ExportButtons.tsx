@@ -19,7 +19,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
     if (!element) return null;
     setIsExporting(true);
     try {
-      const canvas = await domToCanvas(element, { scale: 2, backgroundColor: "#fdfbf7" });
+      const canvas = await domToCanvas(element, { scale: 1, backgroundColor: "#fdfbf7" });
       return canvas;
     } catch (err) {
       console.error("Erreur de capture:", err);
@@ -48,7 +48,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
 
     setIsExporting(true);
     try {
-      const dataUrl = await domToPng(element, { backgroundColor: '#fdfbf7', scale: 2 });
+      const dataUrl = await domToPng(element, { backgroundColor: '#fdfbf7', scale: 1 });
       const response = await fetch(dataUrl);
       const blob = await response.blob();
       
