@@ -66,16 +66,16 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
 
   return (
     <Card className="border-4 border-secondary rounded-[2rem] bg-secondary/5 shadow-2xl mt-8 transition-all">
-      <CardContent className="p-4 sm:p-6 space-y-6">
-        <h3 className="text-3xl font-display font-black text-center text-foreground">How is the food?</h3>
+      <CardContent className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <h3 className="text-xl sm:text-3xl font-display font-black text-center text-foreground">How is the food?</h3>
         
-        <div className="flex flex-col gap-3 max-w-sm mx-auto w-full">
-          <div className="flex justify-between gap-2">
+        <div className="flex flex-col gap-2 sm:gap-3 w-full max-w-sm mx-auto">
+          <div className="flex justify-between gap-1.5 sm:gap-2">
             {SCORES.slice(0, 5).map(score => (
               <Button 
                 key={score}
                 onClick={() => setSelectedScore(score)}
-                className={`flex-1 h-14 md:h-16 px-0 text-xl md:text-2xl border-[3px] md:border-4 rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
+                className={`flex-1 h-11 sm:h-14 md:h-16 px-0 text-lg sm:text-xl md:text-2xl border-2 sm:border-[3px] md:border-4 rounded-xl sm:rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
                   selectedScore === score 
                     ? "bg-primary text-primary-foreground border-primary scale-110" 
                     : "bg-card hover:bg-accent border-border text-foreground"
@@ -86,12 +86,12 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               </Button>
             ))}
           </div>
-          <div className="flex justify-between gap-2">
+          <div className="flex justify-between gap-1.5 sm:gap-2">
             {SCORES.slice(5, 10).map(score => (
               <Button 
                 key={score}
                 onClick={() => setSelectedScore(score)}
-                className={`flex-1 h-14 md:h-16 px-0 text-xl md:text-2xl border-[3px] md:border-4 rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
+                className={`flex-1 h-11 sm:h-14 md:h-16 px-0 text-lg sm:text-xl md:text-2xl border-2 sm:border-[3px] md:border-4 rounded-xl sm:rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
                   selectedScore === score 
                     ? "bg-primary text-primary-foreground border-primary scale-110" 
                     : "bg-card hover:bg-accent border-border text-foreground"
@@ -126,7 +126,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
           </div>
         )}
         
-        <div className="mt-8 pt-6 border-t-4 border-secondary/20">
+        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t-4 border-secondary/20">
           <PhotoWall placeId={placeId} guestName={guestName} />
         </div>
       </CardContent>

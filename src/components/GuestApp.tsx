@@ -47,11 +47,11 @@ export default function GuestApp({ tourId }: { tourId: string }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-8 text-center animate-in fade-in zoom-in duration-500">
         <Image 
-          src="/logo.png" 
-          alt="Vitour Logo" 
-          width={150} 
-          height={150} 
-          className="drop-shadow-2xl animate-bounce mix-blend-multiply contrast-125" 
+          src="/donut.png" 
+          alt="Vitour Donut" 
+          width={120} 
+          height={120} 
+          className="drop-shadow-2xl" 
         />
         <div>
           <h1 className="text-5xl font-display font-black text-primary drop-shadow-sm leading-tight">Join<br/>{tour.name}</h1>
@@ -96,14 +96,14 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   if (tour.status === "live" && currentPlace) {
     return (
       <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
-        <div className="flex justify-between items-center bg-primary text-primary-foreground p-4 rounded-3xl border-4 border-primary-foreground/20 shadow-lg">
-          <div className="font-display font-black text-xl">📍 STOP {currentPlace.order + 1}/{places.length}</div>
-          <div className="font-display font-bold bg-white/20 px-3 py-1 rounded-full">{name}</div>
+        <div className="flex justify-between items-center bg-primary text-primary-foreground p-3 sm:p-4 rounded-2xl sm:rounded-3xl border-4 border-primary-foreground/20 shadow-lg">
+          <div className="font-display font-black text-base sm:text-xl">📍 STOP {currentPlace.order + 1}/{places.length}</div>
+          <div className="font-display font-bold bg-white/20 px-3 py-1 rounded-full text-sm sm:text-base">{name}</div>
         </div>
 
-        <div className="text-center space-y-2 mt-8">
-          <h2 className="text-5xl font-display font-black text-foreground drop-shadow-sm leading-none">{currentPlace.name}</h2>
-          <p className="text-xl text-muted-foreground font-medium">{currentPlace.address}</p>
+        <div className="text-center space-y-2 mt-4 sm:mt-8">
+          <h2 className="text-3xl sm:text-5xl font-display font-black text-foreground drop-shadow-sm leading-none">{currentPlace.name}</h2>
+          <p className="text-base sm:text-xl text-muted-foreground font-medium">{currentPlace.address}</p>
           {currentPlace.adminComment && (
             <div className="inline-block mt-4 bg-primary/10 border-2 border-primary/20 text-primary px-4 py-2 rounded-2xl">
               <span className="font-bold text-lg">💡 Tip :</span> <span className="text-lg font-medium">{currentPlace.adminComment}</span>

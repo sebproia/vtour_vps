@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, GripVertical } from "lucide-react";
+import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, GripVertical, Pause, X } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUser } from "@clerk/nextjs";
@@ -35,6 +35,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const endLiveMode = useMutation(api.places.endLiveMode);
   const optimizeRoute = useMutation(api.places.optimizeRoute);
   const reorderPlacesMutation = useMutation(api.places.reorderPlaces);
+  const pauseTour = useMutation(api.places.pauseTour);
+  const deletePlace = useMutation(api.places.deletePlace);
 
   const [newName, setNewName] = useState("");
   const [newAddress, setNewAddress] = useState("");
@@ -136,6 +138,9 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           )}
           {isLive && (
             <>
+              <Button size="lg" onClick={() => pauseTour({ tourId: tId })} className="h-16 px-6 text-xl rounded-2xl bg-amber-500 text-white hover:bg-amber-600 shadow-[0_6px_0_hsl(45,90%,35%)] hover:shadow-[0_2px_0_hsl(45,90%,35%)] hover:translate-y-1 transition-all font-display font-black">
+                <Pause className="mr-2 w-6 h-6" /> PAUSE
+              </Button>
               {tour.currentStepIndex < places.length - 1 ? (
                 <Button size="lg" onClick={() => nextStep({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_6px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
                   <FastForward className="mr-2 w-6 h-6" /> NEXT STOP
@@ -246,6 +251,15 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                     )}
                                   </div>
                                   {isPassed && <CheckCircle className="w-8 h-8 text-green-500 absolute top-4 right-4" />}
+                                  {isDraft && (
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); deletePlace({ placeId: place._id }); }}
+                                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all"
+                                      title="Supprimer ce stop"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  )}
                                 </div>
                               </Card>
                             </div>
