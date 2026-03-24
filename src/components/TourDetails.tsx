@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, ArrowUpDown, Loader2, GripVertical } from "lucide-react";
+import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, GripVertical } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUser } from "@clerk/nextjs";
@@ -130,16 +130,9 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           </Dialog>
 
           {isDraft && places.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <Button size="lg" onClick={() => startLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
-                <Play className="mr-2 w-6 h-6" /> START LIVE
-              </Button>
-              {places.length > 2 && (
-                <Button size="sm" onClick={handleOptimize} disabled={isOptimizing} title="Optimize Route" className="h-12 w-12 rounded-2xl bg-amber-500 text-amber-foreground hover:bg-amber-600 shadow-[0_4px_0_hsl(45,90%,40%)] hover:translate-y-1 transition-all flex items-center justify-center">
-                  {isOptimizing ? <Loader2 className="animate-spin w-5 h-5" /> : <ArrowUpDown className="w-5 h-5" />}
-                </Button>
-              )}
-            </div>
+            <Button size="lg" onClick={() => startLiveMode({ tourId: tId })} className="h-16 px-8 text-xl rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
+              <Play className="mr-2 w-6 h-6" /> START LIVE
+            </Button>
           )}
           {isLive && (
             <>
@@ -167,9 +160,22 @@ export default function TourDetails({ tourId }: { tourId: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Places List */}
         <div className="lg:col-span-2 space-y-6">
-          <h3 className="text-3xl font-display font-black text-foreground flex items-center gap-2">
-            <MapPin className="text-primary w-8 h-8" /> Route
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-3xl font-display font-black text-foreground flex items-center gap-2">
+              <MapPin className="text-primary w-8 h-8" /> Route
+            </h3>
+            {isDraft && places.length > 2 && (
+              <Button 
+                size="sm" 
+                onClick={handleOptimize} 
+                disabled={isOptimizing} 
+                title="Optimiser le parcours" 
+                className="h-10 w-10 rounded-xl bg-amber-500 text-white hover:bg-amber-600 shadow-[0_3px_0_hsl(45,90%,35%)] hover:shadow-[0_1px_0_hsl(45,90%,35%)] hover:translate-y-0.5 transition-all flex items-center justify-center"
+              >
+                {isOptimizing ? <Loader2 className="animate-spin w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+              </Button>
+            )}
+          </div>
           
           <div className="space-y-4">
             <DragDropContext onDragEnd={onDragEnd}>
@@ -201,16 +207,10 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                 isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg scale-[1.02] z-10" : 
                                 isPassed ? "border-muted bg-muted/20 opacity-70" :
                                 "border-border bg-card"
-                              } ${snapshot.isDragging ? "shadow-2xl ring-4 ring-primary scale-105 z-50" : ""}`}>
+                              } ${snapshot.isDragging ? "shadow-2xl ring-4 ring-primary scale-105 z-50" : ""} ${isDraft ? "cursor-grab active:cursor-grabbing" : ""}`}
+                                {...(isDraft ? provided.dragHandleProps : {})}
+                              >
                                 <div className="flex p-4 md:p-6 gap-4 md:gap-6 items-start">
-                                  {isDraft && (
-                                    <div 
-                                      className="pt-2 -ml-2 text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing transition-colors"
-                                      {...provided.dragHandleProps}
-                                    >
-                                      <GripVertical className="w-6 h-6" />
-                                    </div>
-                                  )}
                                   <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-4 font-display font-black text-xl ${
                                     isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" : 
                                     isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" : 
