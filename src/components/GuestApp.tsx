@@ -48,8 +48,8 @@ export default function GuestApp({ tourId }: { tourId: string }) {
           <Image 
             src="/donut.png" 
             alt="Vitour Donut" 
-            width={100} 
-            height={100} 
+            width={140} 
+            height={140} 
             className="drop-shadow-2xl animate-spin-slow" 
             style={{ animationDuration: "8s" }}
           />
@@ -119,7 +119,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
         </div>
 
         {/* Tasting card */}
-        <TastingCard placeId={currentPlace._id} guestName={name} />
+        <TastingCard key={currentPlace._id} placeId={currentPlace._id} guestName={name} />
 
         {/* Mystery next stop */}
         {tour.currentStepIndex < places.length - 1 && (

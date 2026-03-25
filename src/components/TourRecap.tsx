@@ -45,8 +45,8 @@ export default function TourRecap({ tourId }: { tourId: string }) {
         </div>
       )}
 
-      <div className="space-y-12 animate-in fade-in duration-700">
-        <div id="recap-content-area" className="bg-background pt-10 pb-6 px-4 md:px-8 rounded-3xl">
+      <div className="space-y-8 animate-in fade-in duration-700">
+        <div id="recap-content-area" className="bg-background pt-8 pb-6 px-4 md:px-8 rounded-3xl" style={{ maxWidth: '794px', margin: '0 auto' }}>
           <div className="text-center space-y-4 relative">
             <Link href="/" className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20 transition-colors border-2 border-border hidden md:flex">
               <ArrowLeft className="w-6 h-6" />
@@ -60,7 +60,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
             <p className="text-xl md:text-2xl text-muted-foreground font-medium">The official Travelogue</p>
           </div>
 
-          <div className="space-y-16 mt-12">
+          <div className="space-y-8 mt-8">
             {recap.places.map((place, index) => {
               const averageScore = place.ratings.length > 0
                 ? (place.ratings.reduce((acc, curr) => acc + (curr.score || 0), 0) / place.ratings.length).toFixed(1)
@@ -73,8 +73,8 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                     <div className="absolute left-8 top-24 bottom-[-4rem] w-2 bg-border z-0 hidden md:block" />
                   )}
                   
-                  <div className="flex flex-col md:flex-row gap-8 relative z-10">
-                    <div className="w-16 h-16 bg-secondary text-secondary-foreground border-4 border-secondary-foreground/20 rounded-full flex items-center justify-center text-3xl font-display font-black shadow-lg flex-shrink-0 mx-auto md:mx-0 z-10 relative">
+                  <div className="flex flex-col md:flex-row gap-4 relative z-10">
+                    <div className="w-12 h-12 bg-secondary text-secondary-foreground border-4 border-secondary-foreground/20 rounded-full flex items-center justify-center text-2xl font-display font-black shadow-lg flex-shrink-0 mx-auto md:mx-0 z-10 relative">
                       {index + 1}
                     </div>
                     
@@ -107,22 +107,22 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                         )}
                       </div>
                       
-                      <CardContent className="p-4 md:p-6 bg-muted/30">
-                        <h3 className="text-lg font-display font-bold mb-3 flex items-center gap-2">
-                          <Camera className="text-primary" /> Photos ({place.photos.length})
+                      <CardContent className="p-4 bg-muted/30">
+                        <h3 className="text-base font-display font-bold mb-2 flex items-center gap-2">
+                          <Camera className="text-primary w-4 h-4" /> Photos ({place.photos.length})
                         </h3>
                         
                         {place.photos.length > 0 ? (
-                          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-2 gap-3">
                             {place.photos.map(photo => (
                               <div 
                                 key={photo._id} 
-                                className="relative aspect-square border-4 border-border rounded-2xl overflow-hidden shadow-sm hover:scale-105 transition-transform cursor-pointer"
+                                className="relative aspect-[4/3] border-3 border-border rounded-xl overflow-hidden shadow-sm hover:scale-[1.02] transition-transform cursor-pointer"
                                 onClick={() => photo.url && setSelectedPhoto(photo.url)}
                               >
                                 {photo.url && <img src={photo.url} alt="Food photo" crossOrigin="anonymous" className="object-cover w-full h-full" />}
-                                <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                                  <span className="text-white text-xs font-bold shadow-black drop-shadow-md line-clamp-1">by {photo.uploaderName}</span>
+                                <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent">
+                                  <span className="text-white text-xs font-bold drop-shadow-md line-clamp-1">by {photo.uploaderName}</span>
                                 </div>
                               </div>
                             ))}

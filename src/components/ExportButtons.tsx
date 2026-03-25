@@ -14,32 +14,70 @@ interface ExportButtonsProps {
 export default function ExportButtons({ targetId, tourName }: ExportButtonsProps) {
   const [isExporting, setIsExporting] = useState(false);
 
-  const captureRecap = async () => {
+  const handleExportPDF = async () => {
     const element = document.getElementById(targetId);
-    if (!element) return null;
+    if (!element) return;
+
     setIsExporting(true);
     try {
-      const canvas = await domToCanvas(element, { scale: 1, backgroundColor: "#fdfbf7" });
-      return canvas;
+      // Capture at higher resolution for quality
+      const canvas = await domToCanvas(element, { 
+        scale: 2, 
+        backgroundColor: "#fdfbf7",
+      });
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10; // mm margin on each side
+      const usableWidth = pageWidth - margin * 2;
+      const usableHeight = pageHeight - margin * 2;
+
+      // Calculate the image dimensions relative to the PDF page
+      const imgWidthPx = canvas.width;
+      const imgHeightPx = canvas.height;
+      const imgAspect = imgHeightPx / imgWidthPx;
+      const totalImgHeightMm = usableWidth * imgAspect;
+
+      // If it fits on one page, just add it
+      if (totalImgHeightMm <= usableHeight) {
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        pdf.addImage(imgData, "JPEG", margin, margin, usableWidth, totalImgHeightMm);
+      } else {
+        // Multi-page: slice the canvas into page-sized chunks
+        const pxPerMm = imgWidthPx / usableWidth;
+        const sliceHeightPx = usableHeight * pxPerMm;
+        const totalPages = Math.ceil(imgHeightPx / sliceHeightPx);
+
+        for (let page = 0; page < totalPages; page++) {
+          if (page > 0) pdf.addPage();
+
+          const sourceY = page * sliceHeightPx;
+          const sourceH = Math.min(sliceHeightPx, imgHeightPx - sourceY);
+          const destH = (sourceH / pxPerMm);
+
+          // Create a sub-canvas for this page slice
+          const pageCanvas = document.createElement("canvas");
+          pageCanvas.width = imgWidthPx;
+          pageCanvas.height = sourceH;
+          const ctx = pageCanvas.getContext("2d");
+          if (!ctx) continue;
+
+          ctx.fillStyle = "#fdfbf7";
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, sourceY, imgWidthPx, sourceH, 0, 0, imgWidthPx, sourceH);
+
+          const pageData = pageCanvas.toDataURL("image/jpeg", 0.92);
+          pdf.addImage(pageData, "JPEG", margin, margin, usableWidth, destH);
+        }
+      }
+
+      pdf.save(`Food-Tour-${tourName.replace(/\s+/g, '-')}.pdf`);
     } catch (err) {
-      console.error("Erreur de capture:", err);
-      return null;
+      console.error("Erreur PDF:", err);
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const handleExportPDF = async () => {
-    const canvas = await captureRecap();
-    if (!canvas) return;
-    
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`Food-Tour-${tourName.replace(/\s+/g, '-')}.pdf`);
   };
 
   const handleShareImage = async () => {
@@ -48,7 +86,11 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
 
     setIsExporting(true);
     try {
-      const dataUrl = await domToPng(element, { backgroundColor: '#fdfbf7', scale: 1 });
+      // Capture at scale 2 for good quality
+      const dataUrl = await domToPng(element, { 
+        backgroundColor: '#fdfbf7', 
+        scale: 2,
+      });
       const response = await fetch(dataUrl);
       const blob = await response.blob();
       
@@ -58,7 +100,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         try {
           await navigator.share({
             title: `Food Tour: ${tourName}`,
-            text: "Check out this amazing food tour recap !",
+            text: "Check out this amazing food tour recap!",
             files: [file],
           });
         } catch (error) {
