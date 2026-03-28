@@ -32,6 +32,16 @@ export const createTour = mutation({
   },
 });
 
+export const renameTour = mutation({
+  args: { tourId: v.id("tours"), organizerId: v.string(), name: v.string() },
+  handler: async (ctx, args) => {
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour) throw new Error("Tour not found");
+    if (tour.organizerId !== args.organizerId) throw new Error("Unauthorized");
+    await ctx.db.patch(args.tourId, { name: args.name });
+  },
+});
+
 export const getTourRecap = query({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {

@@ -111,7 +111,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   // Live Screen
   if (tour.status === "live" && currentPlace) {
     return (
-      <div className="space-y-4 animate-in slide-in-from-bottom-8 duration-500">
+      <div key={currentPlace._id} className="space-y-4 animate-in slide-in-from-right-8 duration-500">
         {/* Status bar */}
         <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm text-white p-3 rounded-2xl border-2 border-white/20 shadow-lg">
           <div className="font-display font-black text-sm">📍 STOP {currentPlace.order + 1}/{places.length}</div>

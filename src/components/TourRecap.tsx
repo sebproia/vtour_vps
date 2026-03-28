@@ -153,7 +153,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                         {comments.length > 0 && (
                           <div className="space-y-1.5 pt-1">
                             {comments.map((c, i) => (
-                              <div key={i} className="bg-secondary/90 text-secondary-foreground rounded-xl px-3 py-1.5 shadow-sm">
+                              <div key={i} className="bg-black/50 backdrop-blur-sm text-white rounded-xl px-3 py-1.5 shadow-sm">
                                 <p className="text-xs font-bold leading-snug italic">
                                   &ldquo;{c}&rdquo;
                                 </p>
