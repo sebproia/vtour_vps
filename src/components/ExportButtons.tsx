@@ -89,10 +89,9 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
     setExportStatus("Generating image...");
     try {
       // Use scale 1 on mobile to avoid memory issues, scale 2 on desktop
-      const isMobile = window.innerWidth < 768;
       const dataUrl = await domToPng(element, { 
         backgroundColor: '#fdfbf7', 
-        scale: isMobile ? 1 : 2,
+        scale: 2,
       });
 
       // Try native share first (works on mobile)

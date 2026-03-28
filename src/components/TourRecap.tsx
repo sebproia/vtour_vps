@@ -6,7 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 
@@ -15,9 +15,11 @@ const ExportButtons = dynamic(() => import("./ExportButtons"), { ssr: false });
 export default function TourRecap({ tourId }: { tourId: string }) {
   const recap = useQuery(api.tours.getTourRecap, { tourId: tourId as Id<"tours"> });
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  // Track which photo index is shown per place
+  const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
 
   if (recap === undefined) {
-    return <div className="text-2xl font-display font-black animate-pulse text-muted-foreground mt-12 text-center">Loading your memories... 📸</div>;
+    return <div className="text-xl font-display font-black animate-pulse text-muted-foreground mt-12 text-center">Loading your memories... 📸</div>;
   }
   
   if (recap === null) {
@@ -35,18 +37,24 @@ export default function TourRecap({ tourId }: { tourId: string }) {
     );
   }
 
-  // Format date from Convex _creationTime
   const tourDate = new Date(recap.tour._creationTime).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
 
-  // Get all anonymous comments for a place
   const getAllComments = (ratings: typeof recap.places[0]["ratings"]) => {
     return ratings
       .filter(r => r.comment && r.comment.trim())
       .map(r => r.comment!);
+  };
+
+  const cyclePhoto = (placeId: string, total: number, direction: 1 | -1) => {
+    setPhotoIndexes(prev => {
+      const current = prev[placeId] || 0;
+      const next = (current + direction + total) % total;
+      return { ...prev, [placeId]: next };
+    });
   };
 
   return (
@@ -70,116 +78,123 @@ export default function TourRecap({ tourId }: { tourId: string }) {
       )}
 
       <div className="space-y-6 animate-in fade-in duration-700">
-        {/* Exportable area — single column layout */}
-        <div id="recap-content-area" className="bg-[hsl(45,50%,97%)] pt-8 pb-8 px-4 rounded-3xl" style={{ maxWidth: '500px', margin: '0 auto' }}>
+        {/* Exportable area — single column, card layout */}
+        <div id="recap-content-area" className="bg-[hsl(45,50%,97%)] pt-6 pb-6 px-3 sm:px-4 rounded-2xl" style={{ maxWidth: '480px', margin: '0 auto' }}>
           
-          {/* Header: Logo + Title + Date */}
-          <div className="text-center space-y-2 mb-6">
-            <div className="flex justify-center mb-2">
-              <Image src="/donut.png" alt="Vitour" width={80} height={80} className="drop-shadow-md" />
+          {/* Header */}
+          <div className="text-center space-y-1.5 mb-5">
+            <div className="flex justify-center mb-1">
+              <Image src="/donut.png" alt="Vitour" width={64} height={64} className="drop-shadow-md" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-display font-black text-primary drop-shadow-sm leading-tight">
+            <h1 className="text-xl sm:text-2xl font-display font-black text-primary drop-shadow-sm leading-tight">
               {recap.tour.name}
             </h1>
-            <p className="text-sm text-muted-foreground font-medium">{tourDate}</p>
+            <p className="text-xs text-muted-foreground font-medium">{tourDate}</p>
           </div>
 
-          {/* Single column list of place cards */}
-          <div className="space-y-4">
+          {/* Place cards — photo on top, info below */}
+          <div className="space-y-3">
             {recap.places
               .sort((a, b) => a.order - b.order)
               .map((place) => {
                 const averageScore = place.ratings.length > 0
                   ? (place.ratings.reduce((acc, curr) => acc + (curr.score || 0), 0) / place.ratings.length).toFixed(1)
                   : null;
-                const heroPhoto = place.photos[0]?.url;
-                const extraPhotos = place.photos.length - 1;
+                const currentPhotoIndex = photoIndexes[place._id] || 0;
+                const currentPhoto = place.photos[currentPhotoIndex]?.url || place.photos[0]?.url;
+                const totalPhotos = place.photos.length;
                 const comments = getAllComments(place.ratings);
 
                 return (
-                  <div 
-                    key={place._id} 
-                    className="relative rounded-2xl overflow-hidden border-2 border-secondary/30 shadow-md"
-                  >
-                    {/* Background photo or gradient */}
-                    {heroPhoto ? (
-                      <img 
-                        src={heroPhoto} 
-                        alt={place.name} 
-                        crossOrigin="anonymous"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        onClick={() => heroPhoto && setSelectedPhoto(heroPhoto)}
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20" />
-                    )}
-
-                    {/* Dark gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/15" />
-
-                    {/* Extra photos indicator */}
-                    {extraPhotos > 0 && (
-                      <div className="absolute top-3 right-3 bg-black/60 text-white text-xs font-bold px-2.5 py-1 rounded-full backdrop-blur-sm">
-                        +{extraPhotos} 📸
+                  <div key={place._id} className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
+                    {/* Photo section */}
+                    {currentPhoto ? (
+                      <div className="relative w-full" style={{ aspectRatio: '16/10' }}>
+                        <img 
+                          src={currentPhoto} 
+                          alt={place.name} 
+                          crossOrigin="anonymous"
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={() => setSelectedPhoto(currentPhoto)}
+                        />
+                        
+                        {/* Photo navigation arrows */}
+                        {totalPhotos > 1 && (
+                          <>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); cyclePhoto(place._id, totalPhotos, -1); }}
+                              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); cyclePhoto(place._id, totalPhotos, 1); }}
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                            {/* Dots indicator */}
+                            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
+                              {place.photos.map((_, i) => (
+                                <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === currentPhotoIndex ? 'bg-white' : 'bg-white/40'}`} />
+                              ))}
+                            </div>
+                          </>
+                        )}
                       </div>
+                    ) : (
+                      <div className="w-full bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10" style={{ aspectRatio: '16/10' }} />
                     )}
 
-                    {/* Card content overlay */}
-                    <div className="relative z-10 p-4" style={{ minHeight: '180px' }}>
-                      {/* Restaurant name */}
-                      <h3 className="text-xl font-display font-black text-white drop-shadow-lg leading-tight">
-                        {place.name}
-                      </h3>
-
-                      {/* Bottom section */}
-                      <div className="space-y-2 mt-auto pt-6">
-                        {/* Score + Address row */}
-                        <div className="flex items-end justify-between gap-2">
-                          <div>
-                            {averageScore && (
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className="text-yellow-400 text-base">⭐</span>
-                                <span className="text-white font-black text-2xl drop-shadow-md">{averageScore}</span>
-                                <span className="text-white/60 text-xs font-bold">/10 Avg</span>
-                              </div>
-                            )}
-                            <p className="text-white/60 text-xs leading-tight font-medium">
-                              {place.address}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* All anonymous comments */}
-                        {comments.length > 0 && (
-                          <div className="space-y-1.5 pt-1">
-                            {comments.map((c, i) => (
-                              <div key={i} className="bg-black/50 backdrop-blur-sm text-white rounded-xl px-3 py-1.5 shadow-sm">
-                                <p className="text-xs font-bold leading-snug italic">
-                                  &ldquo;{c}&rdquo;
-                                </p>
-                              </div>
-                            ))}
+                    {/* Info section — below photo */}
+                    <div className="p-3 space-y-1.5">
+                      {/* Name + Score row */}
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-base font-display font-black text-foreground leading-tight truncate">
+                          {place.name}
+                        </h3>
+                        {averageScore && (
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <span className="text-yellow-500 text-sm">⭐</span>
+                            <span className="text-foreground font-black text-lg">{averageScore}</span>
+                            <span className="text-muted-foreground text-[10px] font-bold">/10</span>
                           </div>
                         )}
                       </div>
+
+                      {/* Address */}
+                      <p className="text-muted-foreground text-xs leading-tight">
+                        {place.address}
+                      </p>
+
+                      {/* Comments — plain text, no bubble */}
+                      {comments.length > 0 && (
+                        <div className="pt-1 space-y-0.5">
+                          {comments.map((c, i) => (
+                            <p key={i} className="text-xs text-muted-foreground italic leading-snug">
+                              &ldquo;{c}&rdquo;
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
           </div>
 
-          {/* Footer watermark */}
-          <div className="text-center mt-6 opacity-50">
-            <p className="text-xs font-display font-bold text-muted-foreground">Made with Vitour 🍩</p>
+          {/* Footer */}
+          <div className="text-center mt-4 opacity-40">
+            <p className="text-[10px] font-display font-bold text-muted-foreground">Made with Vitour 🍩</p>
           </div>
         </div>
 
-        {/* Action Buttons (outside exportable area) */}
-        <div className="flex flex-col gap-4 items-center pt-4 pb-24 px-4 w-full max-w-md mx-auto">
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-3 items-center pt-2 pb-20 px-3 w-full max-w-md mx-auto">
           <ExportButtons targetId="recap-content-area" tourName={recap.tour.name} />
 
           <Link href="/" className="w-full">
-            <Button size="lg" className="w-full h-14 md:text-lg text-base rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_4px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
+            <Button size="lg" className="w-full h-12 text-base rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_4px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
               CREATE YOUR OWN TOUR
             </Button>
           </Link>

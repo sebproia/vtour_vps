@@ -73,7 +73,7 @@ export default async function Home() {
         }}
       />
       
-      <main className="container mx-auto p-6 pt-32 space-y-8 relative z-10">
+      <main className="w-full max-w-6xl mx-auto px-3 sm:px-6 pt-8 sm:pt-16 space-y-6 relative z-10">
         <div className="flex justify-between items-center bg-card p-8 rounded-3xl border-4 border-border shadow-xl">
           <div className="flex gap-6 items-center">
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center p-2 border-2 border-primary">
