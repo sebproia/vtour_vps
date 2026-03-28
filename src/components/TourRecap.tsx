@@ -6,7 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, X } from "lucide-react";
+import { X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 
@@ -21,7 +21,18 @@ export default function TourRecap({ tourId }: { tourId: string }) {
   }
   
   if (recap === null) {
-    return <div className="text-center mt-20 text-xl font-display text-destructive">Tour not found!</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+        <div className="text-6xl">🔍</div>
+        <h2 className="text-2xl font-display font-black text-foreground">Tour not found!</h2>
+        <p className="text-base text-muted-foreground font-medium">This tour may have been deleted or the link is invalid.</p>
+        <Link href="/">
+          <Button className="h-12 px-6 text-lg font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all">
+            Go to Homepage 🏠
+          </Button>
+        </Link>
+      </div>
+    );
   }
 
   // Format date from Convex _creationTime
@@ -31,11 +42,11 @@ export default function TourRecap({ tourId }: { tourId: string }) {
     year: "numeric",
   });
 
-  // Pick one random anonymous comment per place (with comment)
-  const getHighlightComment = (ratings: typeof recap.places[0]["ratings"]) => {
-    const withComments = ratings.filter(r => r.comment && r.comment.trim());
-    if (withComments.length === 0) return null;
-    return withComments[0].comment;
+  // Get all anonymous comments for a place
+  const getAllComments = (ratings: typeof recap.places[0]["ratings"]) => {
+    return ratings
+      .filter(r => r.comment && r.comment.trim())
+      .map(r => r.comment!);
   };
 
   return (
@@ -59,15 +70,12 @@ export default function TourRecap({ tourId }: { tourId: string }) {
       )}
 
       <div className="space-y-6 animate-in fade-in duration-700">
-        {/* Exportable area */}
+        {/* Exportable area — single column layout */}
         <div id="recap-content-area" className="bg-[hsl(45,50%,97%)] pt-8 pb-8 px-4 rounded-3xl" style={{ maxWidth: '500px', margin: '0 auto' }}>
           
           {/* Header: Logo + Title + Date */}
-          <div className="text-center space-y-2 mb-8">
-            <Link href="/" className="absolute left-4 top-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 hover:bg-white transition-colors border border-gray-200 z-20 hidden md:flex">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="flex justify-center mb-3">
+          <div className="text-center space-y-2 mb-6">
+            <div className="flex justify-center mb-2">
               <Image src="/donut.png" alt="Vitour" width={80} height={80} className="drop-shadow-md" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-display font-black text-primary drop-shadow-sm leading-tight">
@@ -76,8 +84,8 @@ export default function TourRecap({ tourId }: { tourId: string }) {
             <p className="text-sm text-muted-foreground font-medium">{tourDate}</p>
           </div>
 
-          {/* Grid of place cards — Instagram style */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Single column list of place cards */}
+          <div className="space-y-4">
             {recap.places
               .sort((a, b) => a.order - b.order)
               .map((place) => {
@@ -86,13 +94,12 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                   : null;
                 const heroPhoto = place.photos[0]?.url;
                 const extraPhotos = place.photos.length - 1;
-                const comment = getHighlightComment(place.ratings);
+                const comments = getAllComments(place.ratings);
 
                 return (
                   <div 
                     key={place._id} 
-                    className="relative rounded-2xl overflow-hidden border-2 border-secondary/30 shadow-md group"
-                    style={{ minHeight: '220px' }}
+                    className="relative rounded-2xl overflow-hidden border-2 border-secondary/30 shadow-md"
                   >
                     {/* Background photo or gradient */}
                     {heroPhoto ? (
@@ -107,45 +114,51 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20" />
                     )}
 
-                    {/* Dark gradient overlay for text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                    {/* Dark gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/15" />
 
                     {/* Extra photos indicator */}
                     {extraPhotos > 0 && (
-                      <div className="absolute top-2 right-2 bg-black/60 text-white text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+                      <div className="absolute top-3 right-3 bg-black/60 text-white text-xs font-bold px-2.5 py-1 rounded-full backdrop-blur-sm">
                         +{extraPhotos} 📸
                       </div>
                     )}
 
                     {/* Card content overlay */}
-                    <div className="relative z-10 h-full flex flex-col justify-between p-3" style={{ minHeight: '220px' }}>
+                    <div className="relative z-10 p-4" style={{ minHeight: '180px' }}>
                       {/* Restaurant name */}
-                      <h3 className="text-base sm:text-lg font-display font-black text-white drop-shadow-lg leading-tight">
+                      <h3 className="text-xl font-display font-black text-white drop-shadow-lg leading-tight">
                         {place.name}
                       </h3>
 
-                      {/* Bottom section: score + comment */}
-                      <div className="space-y-1.5 mt-auto">
-                        {/* Score badge */}
-                        {averageScore && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-yellow-400 text-sm">⭐</span>
-                            <span className="text-white font-black text-xl drop-shadow-md">{averageScore}</span>
-                            <span className="text-white/70 text-xs font-bold">/10 Avg</span>
-                          </div>
-                        )}
-
-                        {/* Address */}
-                        <p className="text-white/70 text-[10px] sm:text-xs leading-tight font-medium line-clamp-2">
-                          {place.address}
-                        </p>
-
-                        {/* Anonymous comment bubble */}
-                        {comment && (
-                          <div className="bg-secondary/90 text-secondary-foreground rounded-xl px-2 py-1.5 mt-1 shadow-md">
-                            <p className="text-[10px] sm:text-xs font-bold leading-tight italic line-clamp-2">
-                              "{comment}"
+                      {/* Bottom section */}
+                      <div className="space-y-2 mt-auto pt-6">
+                        {/* Score + Address row */}
+                        <div className="flex items-end justify-between gap-2">
+                          <div>
+                            {averageScore && (
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-yellow-400 text-base">⭐</span>
+                                <span className="text-white font-black text-2xl drop-shadow-md">{averageScore}</span>
+                                <span className="text-white/60 text-xs font-bold">/10 Avg</span>
+                              </div>
+                            )}
+                            <p className="text-white/60 text-xs leading-tight font-medium">
+                              {place.address}
                             </p>
+                          </div>
+                        </div>
+
+                        {/* All anonymous comments */}
+                        {comments.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
+                            {comments.map((c, i) => (
+                              <div key={i} className="bg-secondary/90 text-secondary-foreground rounded-xl px-3 py-1.5 shadow-sm">
+                                <p className="text-xs font-bold leading-snug italic">
+                                  &ldquo;{c}&rdquo;
+                                </p>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>

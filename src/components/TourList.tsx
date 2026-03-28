@@ -75,7 +75,7 @@ export default function TourList({ organizerId }: { organizerId: string }) {
                   {tour.status.toUpperCase()}
                 </span>
               </CardTitle>
-              <CardDescription className="text-lg font-medium">0 Stops planned</CardDescription>
+              <CardDescription className="text-lg font-medium">{tour.stopsCount} Stop{tour.stopsCount !== 1 ? "s" : ""} planned</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="flex gap-2">

@@ -4,11 +4,19 @@ import { v } from "convex/values";
 export const getMyTours = query({
   args: { organizerId: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const tours = await ctx.db
       .query("tours")
       .filter((q) => q.eq(q.field("organizerId"), args.organizerId))
       .order("desc")
       .collect();
+    
+    return Promise.all(tours.map(async (tour) => {
+      const places = await ctx.db
+        .query("places")
+        .withIndex("by_tour", (q) => q.eq("tourId", tour._id))
+        .collect();
+      return { ...tour, stopsCount: places.length };
+    }));
   },
 });
 

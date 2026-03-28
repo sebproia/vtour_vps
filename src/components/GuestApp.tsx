@@ -37,7 +37,18 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   if (tour === undefined || places === undefined) {
     return <div className="animate-pulse text-center mt-20 text-xl font-display font-bold text-white">Loading... 🍩</div>;
   }
-  if (tour === null) return <div className="text-center mt-20 text-xl font-display text-white">Tour not found!</div>;
+  if (tour === null) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+      <div className="text-6xl">🔍</div>
+      <h2 className="text-2xl font-display font-black text-white drop-shadow-md">Tour not found!</h2>
+      <p className="text-base text-white/70 font-medium">This tour may have been deleted.</p>
+      <Link href="/">
+        <Button className="h-12 px-6 text-lg font-display font-black bg-white text-[hsl(330,80%,50%)] rounded-2xl hover:bg-white/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all">
+          Go to Homepage 🏠
+        </Button>
+      </Link>
+    </div>
+  );
 
   // Onboarding Screen — Pink design matching landing page
   if (!hasJoined) {

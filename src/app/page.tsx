@@ -81,7 +81,7 @@ export default async function Home() {
             </div>
             <div>
               <h1 className="text-5xl font-display font-black text-primary drop-shadow-sm tracking-tight">My Tours</h1>
-              <p className="text-xl font-medium text-muted-foreground mt-2">Ready for the next bite, Vito? 🍔</p>
+              <p className="text-xl font-medium text-muted-foreground mt-2">Ready for the next bite? 🍔</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
