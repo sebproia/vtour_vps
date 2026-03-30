@@ -45,8 +45,12 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         const imgData = canvas.toDataURL("image/jpeg", 0.92);
         pdf.addImage(imgData, "JPEG", margin, margin, usableWidth, totalImgHeightMm);
         
-        // Add clickable link over the footer area
-        pdf.link(margin, margin + totalImgHeightMm - 15, usableWidth, 15, { url: window.location.href });
+        // Add explicit text link for mobile compatibility
+        pdf.setFontSize(11);
+        pdf.setTextColor(255, 42, 109);
+        // Place it just below the image, or at the bottom margin if it fills the page
+        const yPos = Math.min(pageHeight - 4, margin + totalImgHeightMm + 6);
+        pdf.textWithLink("🔗 Click here to view online", pageWidth / 2, yPos, { url: window.location.href, align: "center" });
       } else {
         const pxPerMm = imgWidthPx / usableWidth;
         const sliceHeightPx = usableHeight * pxPerMm;
@@ -71,9 +75,10 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
           const pageData = pageCanvas.toDataURL("image/jpeg", 0.92);
           pdf.addImage(pageData, "JPEG", margin, margin, usableWidth, destH);
 
-          // If last page, add clickable link over footer area
           if (page === totalPages - 1) {
-            pdf.link(margin, margin + destH - 15, usableWidth, 15, { url: window.location.href });
+            pdf.setFontSize(11);
+            pdf.setTextColor(255, 42, 109);
+            pdf.textWithLink("🔗 Click here to view online", pageWidth / 2, pageHeight - 4, { url: window.location.href, align: "center" });
           }
         }
       }
