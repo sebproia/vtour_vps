@@ -222,12 +222,6 @@ export default function TourRecap({ tourId }: { tourId: string }) {
               })}
           </div>
 
-          {/* Footer */}
-          <div id="recap-brand-footer" className="text-center mt-6 mb-2">
-            <a href={typeof window !== 'undefined' ? window.location.href : '#'} className="inline-block text-[13px] font-display font-black text-primary hover:text-primary/80 transition-colors bg-primary/10 px-4 py-1.5 rounded-full" target="_blank" rel="noopener noreferrer">
-              🔗 See the recap on Vitour 🍩
-            </a>
-          </div>
         </div>
 
         {/* Action Buttons */}

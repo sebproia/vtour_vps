@@ -27,7 +27,6 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
       const canvas = await domToCanvas(element, { 
         scale: 2, 
         backgroundColor: "#fdfbf7",
-        filter: (node) => (node as HTMLElement)?.id !== "recap-brand-footer",
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
@@ -49,9 +48,11 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         // Add explicit text link for mobile compatibility
         pdf.setFontSize(11);
         pdf.setTextColor(255, 42, 109);
-        // Place it just below the image, or at the bottom margin if it fills the page
+        const linkText = "🔗 View it online on Vitour";
+        const textWidth = pdf.getStringUnitWidth(linkText) * pdf.getFontSize() / pdf.internal.scaleFactor;
+        const xPos = (pageWidth - textWidth) / 2;
         const yPos = Math.min(pageHeight - 6, margin + totalImgHeightMm + 8);
-        pdf.textWithLink("🔗 See the recap on Vitour 🍩", pageWidth / 2, yPos, { url: window.location.href, align: "center" });
+        pdf.textWithLink(linkText, xPos, yPos, { url: window.location.href });
       } else {
         const pxPerMm = imgWidthPx / usableWidth;
         const sliceHeightPx = usableHeight * pxPerMm;
@@ -79,7 +80,10 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
           if (page === totalPages - 1) {
             pdf.setFontSize(11);
             pdf.setTextColor(255, 42, 109);
-            pdf.textWithLink("🔗 See the recap on Vitour 🍩", pageWidth / 2, pageHeight - 6, { url: window.location.href, align: "center" });
+            const linkText = "🔗 View it online on Vitour";
+            const textWidth = pdf.getStringUnitWidth(linkText) * pdf.getFontSize() / pdf.internal.scaleFactor;
+            const xPos = (pageWidth - textWidth) / 2;
+            pdf.textWithLink(linkText, xPos, pageHeight - 6, { url: window.location.href });
           }
         }
       }
