@@ -27,6 +27,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
       const canvas = await domToCanvas(element, { 
         scale: 2, 
         backgroundColor: "#fdfbf7",
+        filter: (node) => (node as HTMLElement)?.id !== "recap-brand-footer",
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
@@ -49,8 +50,8 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         pdf.setFontSize(11);
         pdf.setTextColor(255, 42, 109);
         // Place it just below the image, or at the bottom margin if it fills the page
-        const yPos = Math.min(pageHeight - 4, margin + totalImgHeightMm + 6);
-        pdf.textWithLink("🔗 Click here to view online", pageWidth / 2, yPos, { url: window.location.href, align: "center" });
+        const yPos = Math.min(pageHeight - 6, margin + totalImgHeightMm + 8);
+        pdf.textWithLink("🔗 See the recap on Vitour 🍩", pageWidth / 2, yPos, { url: window.location.href, align: "center" });
       } else {
         const pxPerMm = imgWidthPx / usableWidth;
         const sliceHeightPx = usableHeight * pxPerMm;
@@ -78,7 +79,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
           if (page === totalPages - 1) {
             pdf.setFontSize(11);
             pdf.setTextColor(255, 42, 109);
-            pdf.textWithLink("🔗 Click here to view online", pageWidth / 2, pageHeight - 4, { url: window.location.href, align: "center" });
+            pdf.textWithLink("🔗 See the recap on Vitour 🍩", pageWidth / 2, pageHeight - 6, { url: window.location.href, align: "center" });
           }
         }
       }
