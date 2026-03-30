@@ -9,6 +9,13 @@ import Link from "next/link";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { Shrikhand } from "next/font/google";
+
+const shrikhand = Shrikhand({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 const ExportButtons = dynamic(() => import("./ExportButtons"), { ssr: false });
 
@@ -82,13 +89,25 @@ export default function TourRecap({ tourId }: { tourId: string }) {
         <div id="recap-content-area" className="bg-[hsl(45,50%,97%)] pt-6 pb-6 px-3 sm:px-4 rounded-2xl" style={{ maxWidth: '480px', margin: '0 auto' }}>
           
           {/* Header */}
-          <div className="text-center space-y-1.5 mb-5">
-            <div className="flex justify-center mb-1">
-              <Image src="/donut.png" alt="Vitour" width={64} height={64} className="drop-shadow-md" />
+          <div className="text-center space-y-1.5 mb-8">
+            <div className="relative w-full flex flex-col items-center mb-6">
+              <div className="relative w-28 h-28 mx-auto animate-[spin_12s_linear_infinite]">
+                <Image 
+                  src="/donut.png" 
+                  alt="Vitour Logo" 
+                  fill
+                  className="object-contain scale-125 drop-shadow-md mix-blend-multiply contrast-125" 
+                />
+              </div>
+              <div className={`absolute top-[85%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full z-20 pointer-events-none mt-2 ${shrikhand.className}`}>
+                <h1 className="text-5xl tracking-tight text-white drop-shadow-[0_4px_0_#ff2a6d,0_2px_8px_rgba(0,0,0,0.5)] transform -rotate-6 text-center leading-none" style={{ WebkitTextStroke: '1.5px #ff2a6d' }}>
+                  Vitour
+                </h1>
+              </div>
             </div>
-            <h1 className="text-xl sm:text-2xl font-display font-black text-primary drop-shadow-sm leading-tight">
+            <h2 className="text-xl sm:text-2xl font-display font-black text-primary drop-shadow-sm leading-tight mt-2 pb-1 relative z-30">
               {recap.tour.name}
-            </h1>
+            </h2>
             <p className="text-xs text-muted-foreground font-medium">{tourDate}</p>
           </div>
 

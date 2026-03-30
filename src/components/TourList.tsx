@@ -75,9 +75,23 @@ export default function TourList({ organizerId }: { organizerId: string }) {
                   {tour.status.toUpperCase()}
                 </span>
               </CardTitle>
-              <CardDescription className="text-lg font-medium">{tour.stopsCount} Stop{tour.stopsCount !== 1 ? "s" : ""} planned</CardDescription>
+              <CardDescription className="text-lg font-medium flex items-center gap-3">
+                <span>{tour.stopsCount} Stop{tour.stopsCount !== 1 ? "s" : ""} planned</span>
+                {tour.status === "completed" && tour.averageScore && (
+                  <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-sm font-bold border border-yellow-200">
+                    ⭐ {tour.averageScore}/10
+                  </span>
+                )}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 space-y-3">
+              {tour.status === "completed" && (
+                <Link href={`/recap/${tour._id}`} className="block w-full">
+                  <Button className="w-full text-lg h-12 font-bold font-display border-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all">
+                    View Recap 📸
+                  </Button>
+                </Link>
+              )}
               <div className="flex gap-2">
                 <Link href={`/tour/${tour._id}`} className="block flex-1">
                   <Button variant="outline" className="w-full text-lg h-12 font-bold font-display border-2 rounded-xl border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors">

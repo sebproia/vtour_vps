@@ -15,7 +15,27 @@ export const getMyTours = query({
         .query("places")
         .withIndex("by_tour", (q) => q.eq("tourId", tour._id))
         .collect();
-      return { ...tour, stopsCount: places.length };
+
+      let averageScore = null;
+      if (tour.status === "completed") {
+        let sum = 0;
+        let count = 0;
+        await Promise.all(places.map(async (place) => {
+          const ratings = await ctx.db
+            .query("ratings")
+            .withIndex("by_place", (q) => q.eq("placeId", place._id))
+            .collect();
+          for (const r of ratings) {
+            if (r.score !== undefined && r.score !== null) {
+              sum += r.score;
+              count++;
+            }
+          }
+        }));
+        if (count > 0) averageScore = Number((sum / count).toFixed(1));
+      }
+
+      return { ...tour, stopsCount: places.length, averageScore };
     }));
   },
 });
