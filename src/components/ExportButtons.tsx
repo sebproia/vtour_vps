@@ -44,6 +44,9 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
       if (totalImgHeightMm <= usableHeight) {
         const imgData = canvas.toDataURL("image/jpeg", 0.92);
         pdf.addImage(imgData, "JPEG", margin, margin, usableWidth, totalImgHeightMm);
+        
+        // Add clickable link over the footer area
+        pdf.link(margin, margin + totalImgHeightMm - 15, usableWidth, 15, { url: window.location.href });
       } else {
         const pxPerMm = imgWidthPx / usableWidth;
         const sliceHeightPx = usableHeight * pxPerMm;
@@ -67,6 +70,11 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
 
           const pageData = pageCanvas.toDataURL("image/jpeg", 0.92);
           pdf.addImage(pageData, "JPEG", margin, margin, usableWidth, destH);
+
+          // If last page, add clickable link over footer area
+          if (page === totalPages - 1) {
+            pdf.link(margin, margin + destH - 15, usableWidth, 15, { url: window.location.href });
+          }
         }
       }
 

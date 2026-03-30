@@ -222,8 +222,10 @@ export default function TourRecap({ tourId }: { tourId: string }) {
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-4 opacity-40">
-            <p className="text-[10px] font-display font-bold text-muted-foreground">Made with Vitour 🍩</p>
+          <div className="text-center mt-6 mb-2">
+            <a href={typeof window !== 'undefined' ? window.location.href : '#'} className="inline-block text-[13px] font-display font-black text-primary hover:text-primary/80 transition-colors bg-primary/10 px-4 py-1.5 rounded-full" target="_blank" rel="noopener noreferrer">
+              🔗 See the recap on Vitour 🍩
+            </a>
           </div>
         </div>
 
