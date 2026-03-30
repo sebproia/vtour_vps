@@ -50,6 +50,18 @@ export default function TourRecap({ tourId }: { tourId: string }) {
     year: "numeric",
   });
 
+  let totalScore = 0;
+  let scoreCount = 0;
+  recap.places.forEach(place => {
+    place.ratings.forEach(r => {
+      if (r.score !== undefined && r.score !== null) {
+        totalScore += r.score;
+        scoreCount++;
+      }
+    });
+  });
+  const globalScore = scoreCount > 0 ? (totalScore / scoreCount).toFixed(1) : null;
+
   const getAllComments = (ratings: typeof recap.places[0]["ratings"]) => {
     return ratings
       .filter(r => r.comment && r.comment.trim())
@@ -108,7 +120,14 @@ export default function TourRecap({ tourId }: { tourId: string }) {
             <h2 className="text-xl sm:text-2xl font-display font-black text-primary drop-shadow-sm leading-tight mt-2 pb-1 relative z-30">
               {recap.tour.name}
             </h2>
-            <p className="text-xs text-muted-foreground font-medium">{tourDate}</p>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-xs text-muted-foreground font-medium">{tourDate}</p>
+              {globalScore && (
+                <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-black border border-yellow-200 shadow-sm font-display relative z-30">
+                  Global Note: ⭐ {globalScore}/10
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Place cards — photo on top, info below */}
