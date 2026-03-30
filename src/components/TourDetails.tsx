@@ -287,12 +287,6 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                         <Navigation className="w-3 h-3" /> Itinéraire
                                       </Button>
                                     )}
-                                    
-                                    {isCurrentStep && (
-                                      <div className="mt-4 border-t-2 border-secondary/20 pt-4">
-                                        <TastingCard key={place._id} placeId={place._id} guestName={adminName} />
-                                      </div>
-                                    )}
                                   </div>
                                   {isPassed && <CheckCircle className="w-5 h-5 text-green-500 absolute top-3 right-3 flex-shrink-0" />}
                                   {isDraft && (
@@ -305,6 +299,11 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                     </button>
                                   )}
                                 </div>
+                                {isCurrentStep && (
+                                  <div className="px-3 pb-3 sm:px-4 sm:pb-4 border-t-2 border-secondary/20 pt-4 bg-secondary/5">
+                                    <TastingCard key={place._id} placeId={place._id} guestName={adminName} />
+                                  </div>
+                                )}
                               </Card>
                             </div>
                           )}
