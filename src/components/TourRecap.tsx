@@ -107,8 +107,9 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                 <Image 
                   src="/donut.png" 
                   alt="Vitour Logo" 
-                  fill
-                  className="object-contain scale-125 drop-shadow-md mix-blend-multiply contrast-125" 
+                  width={112}
+                  height={112}
+                  className="scale-125 drop-shadow-md contrast-125" 
                 />
               </div>
               <div className={`absolute top-[85%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full z-20 pointer-events-none mt-2 ${shrikhand.className}`}>
