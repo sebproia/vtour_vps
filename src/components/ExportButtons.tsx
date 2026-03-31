@@ -48,7 +48,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         // Add explicit text link for mobile compatibility
         pdf.setFontSize(11);
         pdf.setTextColor(255, 42, 109);
-        const linkText = "🔗 View it online on Vitour";
+        const linkText = "View it online on Vitour";
         const textWidth = pdf.getStringUnitWidth(linkText) * pdf.getFontSize() / pdf.internal.scaleFactor;
         const xPos = (pageWidth - textWidth) / 2;
         const yPos = Math.min(pageHeight - 6, margin + totalImgHeightMm + 8);
@@ -80,7 +80,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
           if (page === totalPages - 1) {
             pdf.setFontSize(11);
             pdf.setTextColor(255, 42, 109);
-            const linkText = "🔗 View it online on Vitour";
+            const linkText = "View it online on Vitour";
             const textWidth = pdf.getStringUnitWidth(linkText) * pdf.getFontSize() / pdf.internal.scaleFactor;
             const xPos = (pageWidth - textWidth) / 2;
             pdf.textWithLink(linkText, xPos, pageHeight - 6, { url: window.location.href });
