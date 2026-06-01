@@ -4,6 +4,7 @@ import TourList from "@/components/TourList";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Shrikhand } from "next/font/google";
+import AuthSync from "@/components/AuthSync";
 
 const shrikhand = Shrikhand({
   weight: "400",
@@ -17,6 +18,7 @@ export default async function Home() {
   if (!userId) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-primary relative overflow-hidden">
+        <AuthSync />
         {/* Retro checkered pattern overlay */}
         <div 
           className="absolute inset-0 opacity-[0.03]" 

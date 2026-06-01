@@ -1,7 +1,6 @@
 const CACHE_NAME = "vitour-cache-v1";
 
 const ASSETS_TO_CACHE = [
-  "/",
   "/manifest.json",
   "/logo.png",
   "/donut.png",
