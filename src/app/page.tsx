@@ -89,7 +89,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <TourList organizerId={userId} />
+        <TourList />
       </main>
     </div>
   );

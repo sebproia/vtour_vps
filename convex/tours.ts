@@ -2,11 +2,14 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const getMyTours = query({
-  args: { organizerId: v.string() },
+  args: { organizerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const organizerId = identity ? identity.subject : args.organizerId;
+    if (!organizerId) throw new Error("Unauthenticated");
     const tours = await ctx.db
       .query("tours")
-      .filter((q) => q.eq(q.field("organizerId"), args.organizerId))
+      .filter((q) => q.eq(q.field("organizerId"), organizerId))
       .order("desc")
       .collect();
     
@@ -41,11 +44,15 @@ export const getMyTours = query({
 });
 
 export const createTour = mutation({
-  args: { name: v.string(), organizerId: v.string() },
+  args: { name: v.string(), organizerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const organizerId = identity ? identity.subject : args.organizerId;
+    if (!organizerId) throw new Error("Unauthenticated");
+
     return await ctx.db.insert("tours", {
       name: args.name,
-      organizerId: args.organizerId,
+      organizerId: organizerId,
       status: "draft",
       currentStepIndex: 0,
     });
@@ -53,11 +60,15 @@ export const createTour = mutation({
 });
 
 export const renameTour = mutation({
-  args: { tourId: v.id("tours"), organizerId: v.string(), name: v.string() },
+  args: { tourId: v.id("tours"), name: v.string(), organizerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const organizerId = identity ? identity.subject : args.organizerId;
+    if (!organizerId) throw new Error("Unauthenticated");
+
     const tour = await ctx.db.get(args.tourId);
     if (!tour) throw new Error("Tour not found");
-    if (tour.organizerId !== args.organizerId) throw new Error("Unauthorized");
+    if (tour.organizerId !== organizerId) throw new Error("Unauthorized");
     await ctx.db.patch(args.tourId, { name: args.name });
   },
 });
@@ -101,11 +112,15 @@ export const getTourRecap = query({
 });
 
 export const deleteTour = mutation({
-  args: { tourId: v.id("tours"), organizerId: v.string() },
+  args: { tourId: v.id("tours"), organizerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const organizerId = identity ? identity.subject : args.organizerId;
+    if (!organizerId) throw new Error("Unauthenticated");
+
     const tour = await ctx.db.get(args.tourId);
     if (!tour) throw new Error("Tour not found");
-    if (tour.organizerId !== args.organizerId) throw new Error("Unauthorized");
+    if (tour.organizerId !== organizerId) throw new Error("Unauthorized");
 
     const places = await ctx.db
       .query("places")
@@ -135,16 +150,20 @@ export const deleteTour = mutation({
 });
 
 export const duplicateTour = mutation({
-  args: { tourId: v.id("tours"), organizerId: v.string() },
+  args: { tourId: v.id("tours"), organizerId: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const organizerId = identity ? identity.subject : args.organizerId;
+    if (!organizerId) throw new Error("Unauthenticated");
+
     const tour = await ctx.db.get(args.tourId);
     if (!tour) throw new Error("Tour not found");
-    if (tour.organizerId !== args.organizerId) throw new Error("Unauthorized");
+    if (tour.organizerId !== organizerId) throw new Error("Unauthorized");
 
     const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
     const newTourId = await ctx.db.insert("tours", {
       name: `${tour.name} (${today})`,
-      organizerId: args.organizerId,
+      organizerId: organizerId,
       status: "draft",
       currentStepIndex: 0,
     });

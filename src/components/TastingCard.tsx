@@ -38,7 +38,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
                     <span className="font-bold text-primary text-xl">{r.score}/10</span> 
                     <span className="text-sm font-bold opacity-70">{r.guestName}</span>
                   </div>
-                  {r.comment && <p className="text-sm italic font-medium">"{r.comment}"</p>}
+                  {r.comment && <p className="text-sm italic font-medium">&ldquo;{r.comment}&rdquo;</p>}
                 </div>
               ))}
             </div>

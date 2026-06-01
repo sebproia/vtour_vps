@@ -23,8 +23,10 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   useEffect(() => {
     const savedName = localStorage.getItem(`vitour_${tId}_name`);
     if (savedName) {
-      setName(savedName);
-      setHasJoined(true);
+      setTimeout(() => {
+        setName(savedName);
+        setHasJoined(true);
+      }, 0);
     }
   }, [tId]);
 
@@ -86,7 +88,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
             disabled={!name.trim()}
             className="w-full h-14 text-xl font-display font-black bg-[hsl(190,80%,50%)] text-white rounded-2xl hover:bg-[hsl(190,80%,45%)] shadow-[0_6px_0_hsl(190,80%,35%)] hover:shadow-[0_2px_0_hsl(190,80%,35%)] hover:translate-y-1 transition-all"
           >
-            LET'S EAT! 🍽️
+            LET&apos;S EAT! 🍽️
           </Button>
         </div>
       </div>
@@ -100,11 +102,12 @@ export default function GuestApp({ tourId }: { tourId: string }) {
         <div className="text-7xl">⏰</div>
         <h2 className="text-3xl font-display font-black text-white drop-shadow-md">Hold tight, {name}!</h2>
         <p className="text-lg text-white/80 font-medium bg-white/10 backdrop-blur-sm p-5 rounded-2xl border-2 border-white/20 font-display">
-          The tour hasn't started yet.<br/>Waiting for the organizer…
+          The tour hasn&apos;t started yet.<br/>Waiting for the organizer…
         </p>
       </div>
     );
   }
+
 
   const currentPlace = places.find(p => p.order === tour.currentStepIndex);
 

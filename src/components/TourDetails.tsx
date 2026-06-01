@@ -59,7 +59,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
 
   const handleRename = async () => {
     if (!renameValue.trim() || !user?.id) return;
-    await renameTour({ tourId: tId, organizerId: user.id, name: renameValue.trim() });
+    await renameTour({ tourId: tId, name: renameValue.trim() });
     setIsRenaming(false);
   };
 

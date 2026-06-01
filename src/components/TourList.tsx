@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Trash2, Copy } from "lucide-react";
 
-export default function TourList({ organizerId }: { organizerId: string }) {
-  const tours = useQuery(api.tours.getMyTours, { organizerId });
+export default function TourList() {
+  const tours = useQuery(api.tours.getMyTours, {});
   const createTour = useMutation(api.tours.createTour);
   const deleteTour = useMutation(api.tours.deleteTour);
   const duplicateTour = useMutation(api.tours.duplicateTour);
@@ -19,7 +19,7 @@ export default function TourList({ organizerId }: { organizerId: string }) {
 
   const handleCreate = async () => {
     if (!newTourName.trim()) return;
-    await createTour({ name: newTourName, organizerId });
+    await createTour({ name: newTourName });
     setNewTourName("");
     setIsCreating(false);
   };
@@ -104,7 +104,7 @@ export default function TourList({ organizerId }: { organizerId: string }) {
                   onClick={async (e) => {
                     e.preventDefault();
                     if (confirm("Dupliquer ce tour ? (Les notes et photos ne seront pas copiées)")) {
-                      await duplicateTour({ tourId: tour._id, organizerId });
+                      await duplicateTour({ tourId: tour._id });
                     }
                   }}
                   title="Dupliquer le tour"
@@ -117,7 +117,7 @@ export default function TourList({ organizerId }: { organizerId: string }) {
                   onClick={async (e) => {
                     e.preventDefault();
                     if (confirm("Are you sure you want to delete this tour and all its memories?")) {
-                      await deleteTour({ tourId: tour._id, organizerId });
+                      await deleteTour({ tourId: tour._id });
                     }
                   }}
                   title="Supprimer le tour"
@@ -132,7 +132,7 @@ export default function TourList({ organizerId }: { organizerId: string }) {
         {tours.length === 0 && !isCreating && (
           <div className="col-span-full text-center py-20 bg-muted/20 rounded-[3rem] border-4 border-dashed border-muted">
             <h3 className="text-3xl font-display font-black text-muted-foreground/50">No tours yet!</h3>
-            <p className="text-xl text-muted-foreground/40 mt-2 font-medium">Click "+ NEW TOUR" to start your first incredible food journey.</p>
+            <p className="text-xl text-muted-foreground/40 mt-2 font-medium">Click &quot;+ NEW TOUR&quot; to start your first incredible food journey.</p>
           </div>
         )}
       </div>

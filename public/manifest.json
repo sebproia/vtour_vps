@@ -1,0 +1,30 @@
+{
+  "name": "Vitour - Your Food Tour Recap",
+  "short_name": "Vitour",
+  "description": "Partagez vos aventures culinaires avec style. Créez des récapitulatifs de vos food tours et partagez-les.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e8fbfc",
+  "theme_color": "#f24099",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/donut.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -27,6 +27,11 @@ export const addPlace = mutation({
     adminComment: v.optional(v.string())
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+
     // Get current places to determine the order
     const existingPlaces = await ctx.db
       .query("places")
@@ -55,6 +60,11 @@ export const getTourInfo = query({
 export const startLiveMode = mutation({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+
     return await ctx.db.patch(args.tourId, {
       status: "live",
       currentStepIndex: 0
@@ -65,8 +75,10 @@ export const startLiveMode = mutation({
 export const nextStep = mutation({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
     const tour = await ctx.db.get(args.tourId);
-    if (!tour) throw new Error("Tour not found");
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
     
     return await ctx.db.patch(args.tourId, {
       currentStepIndex: tour.currentStepIndex + 1
@@ -77,6 +89,11 @@ export const nextStep = mutation({
 export const endLiveMode = mutation({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+
     return await ctx.db.patch(args.tourId, {
       status: "completed",
     });
@@ -86,6 +103,11 @@ export const endLiveMode = mutation({
 export const pauseTour = mutation({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+
     return await ctx.db.patch(args.tourId, {
       status: "draft",
     });
@@ -95,8 +117,14 @@ export const pauseTour = mutation({
 export const deletePlace = mutation({
   args: { placeId: v.id("places") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
     const place = await ctx.db.get(args.placeId);
     if (!place) throw new Error("Place not found");
+
+    const tour = await ctx.db.get(place.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
 
     // Delete associated ratings
     const ratings = await ctx.db
@@ -134,6 +162,11 @@ export const deletePlace = mutation({
 export const optimizeRoute = mutation({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tourInfo = await ctx.db.get(args.tourId);
+    if (!tourInfo || tourInfo.organizerId !== identity.subject) throw new Error("Unauthorized");
+
     const places = await ctx.db
       .query("places")
       .withIndex("by_tour", (q) => q.eq("tourId", args.tourId))
@@ -190,6 +223,11 @@ export const reorderPlaces = mutation({
     updates: v.array(v.object({ _id: v.id("places"), order: v.number() }))
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+
     for (const update of args.updates) {
       await ctx.db.patch(update._id, { order: update.order });
     }
