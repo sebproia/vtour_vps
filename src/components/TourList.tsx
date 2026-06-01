@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useState } from "react";
 import Link from "next/link";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Trash2, Copy } from "lucide-react";
 
 export default function TourList() {
-  const tours = useQuery(api.tours.getMyTours, {});
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  const tours = useQuery(api.tours.getMyTours, isAuthenticated ? {} : "skip");
   const createTour = useMutation(api.tours.createTour);
   const deleteTour = useMutation(api.tours.deleteTour);
   const duplicateTour = useMutation(api.tours.duplicateTour);
@@ -24,7 +25,7 @@ export default function TourList() {
     setIsCreating(false);
   };
 
-  if (tours === undefined) return <div className="text-xl font-bold font-display animate-pulse text-muted-foreground mt-12">Loading your tours... 🍩</div>;
+  if (isLoading || !isAuthenticated || tours === undefined) return <div className="text-xl font-bold font-display animate-pulse text-muted-foreground mt-12">Loading your tours... 🍩</div>;
 
   return (
     <div className="space-y-8 mt-12">

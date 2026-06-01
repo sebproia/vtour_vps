@@ -6,7 +6,7 @@ export const getMyTours = query({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     const organizerId = identity ? identity.subject : args.organizerId;
-    if (!organizerId) throw new Error("Unauthenticated");
+    if (!organizerId) return [];
     const tours = await ctx.db
       .query("tours")
       .filter((q) => q.eq(q.field("organizerId"), organizerId))
