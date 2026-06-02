@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -21,9 +21,32 @@ const ExportButtons = dynamic(() => import("./ExportButtons"), { ssr: false });
 
 export default function TourRecap({ tourId }: { tourId: string }) {
   const recap = useQuery(api.tours.getTourRecap, { tourId: tourId as Id<"tours"> });
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [lightboxPhotos, setLightboxPhotos] = useState<string[] | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number>(0);
   // Track which photo index is shown per place
   const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
+
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (onSwipeLeft: () => void, onSwipeRight: () => void) => {
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50;
+    if (diff > threshold) {
+      onSwipeLeft();
+    } else if (diff < -threshold) {
+      onSwipeRight();
+    }
+  };
 
   if (recap === undefined) {
     return <div className="text-xl font-display font-black animate-pulse text-muted-foreground mt-12 text-center">Loading your memories... 📸</div>;
@@ -85,19 +108,83 @@ export default function TourRecap({ tourId }: { tourId: string }) {
   return (
     <>
       {/* Fullscreen Photo Modal */}
-      {selectedPhoto && (
+      {lightboxPhotos && lightboxPhotos.length > 0 && (
         <div 
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
-          onClick={() => setSelectedPhoto(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 select-none touch-none"
+          onClick={() => setLightboxPhotos(null)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={() => handleTouchEnd(
+            () => setLightboxIndex(prev => (prev + 1) % lightboxPhotos.length),
+            () => setLightboxIndex(prev => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length)
+          )}
         >
           <button 
-            className="absolute top-6 right-6 w-12 h-12 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center text-white transition-colors"
-            onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
+            className="absolute top-6 right-6 w-12 h-12 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center text-white transition-colors z-50 cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); setLightboxPhotos(null); }}
           >
-             <X className="w-8 h-8" />
+             <X className="w-6 h-6" />
           </button>
-          <div className="relative w-full max-w-4xl h-[80vh] flex justify-center items-center">
-            <img src={selectedPhoto} alt="Tour Photo" crossOrigin="anonymous" className="object-contain max-h-full max-w-full rounded-xl" />
+
+          {lightboxPhotos.length > 1 && (
+            <>
+              {/* Left Arrow Button */}
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition-all z-40 hidden sm:flex cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(prev => (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length);
+                }}
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+
+              {/* Right Arrow Button */}
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition-all z-40 hidden sm:flex cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(prev => (prev + 1) % lightboxPhotos.length);
+                }}
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            </>
+          )}
+
+          <div 
+            className="relative w-full max-w-4xl h-[75vh] flex flex-col justify-center items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={lightboxPhotos[lightboxIndex]} 
+              alt="Tour Photo Fullscreen" 
+              crossOrigin="anonymous" 
+              className="object-contain max-h-full max-w-full rounded-xl shadow-2xl transition-all duration-300 animate-in fade-in" 
+            />
+
+            {/* Bottom Counter & Indicators */}
+            {lightboxPhotos.length > 1 && (
+              <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                <span className="text-white/60 text-xs font-medium">
+                  {lightboxIndex + 1} / {lightboxPhotos.length}
+                </span>
+                <div className="flex gap-1.5">
+                  {lightboxPhotos.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLightboxIndex(i);
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                        i === lightboxIndex ? "bg-white scale-110" : "bg-white/40 hover:bg-white/60"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -155,13 +242,30 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                   <div key={place._id} className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
                     {/* Photo section */}
                     {currentPhoto ? (
-                      <div className="relative w-full" style={{ aspectRatio: '16/10' }}>
+                      <div 
+                        className="relative w-full overflow-hidden select-none" 
+                        style={{ aspectRatio: '16/10' }}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={() => {
+                          if (totalPhotos > 1) {
+                            handleTouchEnd(
+                              () => cyclePhoto(place._id, totalPhotos, 1),
+                              () => cyclePhoto(place._id, totalPhotos, -1)
+                            );
+                          }
+                        }}
+                      >
                         <img 
                           src={currentPhoto} 
                           alt={place.name} 
                           crossOrigin="anonymous"
-                          className="w-full h-full object-cover cursor-pointer"
-                          onClick={() => setSelectedPhoto(currentPhoto)}
+                          className="w-full h-full object-cover cursor-pointer animate-in fade-in"
+                          onClick={() => {
+                            const urls = place.photos.map(p => p.url).filter((url): url is string => !!url);
+                            setLightboxPhotos(urls);
+                            setLightboxIndex(currentPhotoIndex);
+                          }}
                         />
                         
                         {/* Photo navigation arrows */}
@@ -169,18 +273,18 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                           <>
                             <button
                               onClick={(e) => { e.stopPropagation(); cyclePhoto(place._id, totalPhotos, -1); }}
-                              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+                              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors z-20 cursor-pointer"
                             >
                               <ChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); cyclePhoto(place._id, totalPhotos, 1); }}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors z-20 cursor-pointer"
                             >
                               <ChevronRight className="w-4 h-4" />
                             </button>
                             {/* Dots indicator */}
-                            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
+                            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1 z-20">
                               {place.photos.map((_, i) => (
                                 <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === currentPhotoIndex ? 'bg-white' : 'bg-white/40'}`} />
                               ))}
