@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Share, Loader2, ImageDown } from "lucide-react";
 import { domToPng, domToCanvas } from "modern-screenshot";
-import jsPDF from "jspdf";
+
 
 interface ExportButtonsProps {
   targetId: string;
@@ -29,6 +29,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         backgroundColor: "#fdfbf7",
       });
 
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();

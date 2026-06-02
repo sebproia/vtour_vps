@@ -8,17 +8,18 @@ import { Button } from "@/components/ui/button";
 import PhotoWall from "@/components/PhotoWall";
 import { Loader2, Send } from "lucide-react";
 
-const SCORES = Array.from({ length: 10 }, (_, i) => i + 1);
-
 export default function TastingCard({ placeId, guestName }: { placeId: Id<"places">, guestName: string }) {
   const addRating = useMutation(api.ratings.addRating);
   const ratings = useQuery(api.ratings.getRatingsByPlace, { placeId });
-  const [selectedScore, setSelectedScore] = useState<number | null>(null);
+  const [selectedScore, setSelectedScore] = useState<number | null>(5.0);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const touchStartAngle = useRef<number>(0);
+  const touchStartScore = useRef<number>(5.0);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -119,53 +120,130 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
     }
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isSubmitting) return;
+    e.preventDefault();
+    
+    const element = e.currentTarget;
+    element.setPointerCapture(e.pointerId);
+    
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+    
+    touchStartAngle.current = Math.atan2(dy, dx);
+    touchStartScore.current = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || isSubmitting) return;
+    e.preventDefault();
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+    
+    const currentAngle = Math.atan2(dy, dx);
+    let diff = currentAngle - touchStartAngle.current;
+    
+    if (diff > Math.PI) diff -= 2 * Math.PI;
+    if (diff < -Math.PI) diff += 2 * Math.PI;
+    
+    const deltaScore = (diff / (2 * Math.PI)) * 9;
+    const newScore = Math.max(1, Math.min(10, touchStartScore.current + deltaScore));
+    setSelectedScore(Number(newScore.toFixed(1)));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    setIsDragging(false);
+  };
+
+  const getAvatarSrc = (score: number) => {
+    if (score < 3.5) return "/grade-disgusted.png";
+    if (score < 5.5) return "/grade-skeptical.png";
+    if (score < 8.0) return "/grade-happy.png";
+    return "/grade-laughing.png";
+  };
+
+  const scoreVal = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
+  const donutRotation = (scoreVal - 1.0) * 40; // 40 degrees per score unit (360 / 9)
+
   return (
     <div className="space-y-4 pt-2">
-      <h3 className="text-lg font-display font-black text-center text-foreground">
+      <h3 className="text-lg font-display font-black text-center text-foreground select-none">
         {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "C'était bon ? 😋"}
       </h3>
       
-      <div className="flex flex-col gap-2 w-full max-w-sm mx-auto">
-        <div className="flex justify-between gap-1.5">
-          {SCORES.slice(0, 5).map(score => (
-            <Button 
-              key={score}
-              onClick={() => setSelectedScore(score)}
-              className={`flex-1 h-11 text-base border-2 rounded-xl shadow-sm hover:-translate-y-0.5 font-display font-black transition-all cursor-pointer ${
-                selectedScore === score 
-                  ? "bg-primary text-primary-foreground border-primary scale-105 shadow-md" 
-                  : "bg-card hover:bg-accent border-border text-foreground"
-              }`}
-              variant="outline"
-            >
-              {score}
-            </Button>
-          ))}
+      {selectedScore !== -1 ? (
+        <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto select-none">
+          {/* Dial container */}
+          <div 
+            className="relative w-56 h-56 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            style={{ touchAction: "none" }}
+          >
+            {/* Rotating Donut image */}
+            <div 
+              className="absolute inset-0 transition-transform duration-75 ease-out select-none pointer-events-none"
+              style={{ 
+                transform: `rotate(${donutRotation}deg)`,
+                backgroundImage: "url('/donut-dial.png')",
+                backgroundSize: "contain",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat"
+              }}
+            />
+            
+            {/* Center Hole cutout & Fixed character avatar */}
+            <div className="absolute w-[95px] h-[95px] rounded-full bg-card border-4 border-primary/20 overflow-hidden shadow-inner flex items-center justify-center pointer-events-none select-none">
+              <img 
+                src={getAvatarSrc(scoreVal)} 
+                alt="Avatar note" 
+                className="w-[85px] h-[85px] object-contain select-none pointer-events-none"
+              />
+            </div>
+          </div>
+
+          {/* Rating Score Text */}
+          <div className="text-center select-none">
+            <div className="text-3xl font-display font-black text-primary drop-shadow-sm select-none">
+              {scoreVal.toFixed(1)} <span className="text-lg text-muted-foreground">/ 10</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60 mt-1 select-none font-bold">
+              Faites tourner le donut pour ajuster votre note 🍩
+            </p>
+          </div>
+
+          <button 
+            onClick={handlePass}
+            disabled={isSubmitting}
+            className="text-xs font-semibold underline decoration-dotted text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer select-none"
+          >
+            Passer cet arrêt ⏭️
+          </button>
         </div>
-        <div className="flex justify-between gap-1.5">
-          {SCORES.slice(5, 10).map(score => (
-            <Button 
-              key={score}
-              onClick={() => setSelectedScore(score)}
-              className={`flex-1 h-11 text-base border-2 rounded-xl shadow-sm hover:-translate-y-0.5 font-display font-black transition-all cursor-pointer ${
-                selectedScore === score 
-                  ? "bg-primary text-primary-foreground border-primary scale-105 shadow-md" 
-                  : "bg-card hover:bg-accent border-border text-foreground"
-              }`}
-              variant="outline"
-            >
-              {score}
-            </Button>
-          ))}
+      ) : (
+        <div className="text-center select-none py-6 space-y-4">
+          <p className="text-sm font-semibold text-muted-foreground">Vous avez choisi de passer cet arrêt.</p>
+          <button 
+            onClick={() => setSelectedScore(5.0)}
+            className="h-10 px-6 text-sm font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all rounded-xl cursor-pointer"
+          >
+            Donner une note 🍩
+          </button>
         </div>
-        <button 
-          onClick={handlePass}
-          disabled={isSubmitting}
-          className="w-fit mx-auto mt-2 text-xs font-semibold underline decoration-dotted text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer"
-        >
-          Passer cet arrêt ⏭️
-        </button>
-      </div>
+      )}
 
       {selectedScore !== null && selectedScore !== -1 && (
         <div className="pt-4 border-t-2 border-dashed border-border/80 animate-in fade-in slide-in-from-top-4">
