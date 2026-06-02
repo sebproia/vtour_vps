@@ -5,8 +5,8 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import PhotoWall from "@/components/PhotoWall";
+import { Loader2 } from "lucide-react";
 
 const SCORES = Array.from({ length: 10 }, (_, i) => i + 1);
 
@@ -72,26 +72,38 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   const handleSubmit = async () => {
     if (selectedScore === null) return;
     setIsSubmitting(true);
-    await addRating({ 
-      placeId, 
-      guestName, 
-      score: selectedScore === -1 ? undefined : selectedScore,
-      comment: comment.trim() || undefined
-    });
-    setIsSubmitting(false);
-    setIsEditing(false);
+    try {
+      await addRating({ 
+        placeId, 
+        guestName, 
+        score: selectedScore === -1 ? undefined : selectedScore,
+        comment: comment.trim() || undefined
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      alert("Erreur lors de la soumission de la note : " + (error as Error).message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePass = async () => {
     setIsSubmitting(true);
-    await addRating({ 
-      placeId, 
-      guestName, 
-      score: undefined,
-      comment: undefined
-    });
-    setIsSubmitting(false);
-    setIsEditing(false);
+    try {
+      await addRating({ 
+        placeId, 
+        guestName, 
+        score: undefined,
+        comment: undefined
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error passing stop:", error);
+      alert("Erreur lors du passage de l'arrêt : " + (error as Error).message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -143,34 +155,39 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
       </div>
 
       {selectedScore !== null && selectedScore !== -1 && (
-        <div className="space-y-4 pt-4 border-t-2 border-dashed border-border/80 animate-in fade-in slide-in-from-top-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-bold font-display px-1">Un mot à dire ? (Optionnel)</label>
-            <textarea 
-              className="w-full p-3 rounded-xl border-2 border-border bg-card text-foreground font-medium resize-none focus:outline-none focus:border-primary/50 transition-colors text-sm"
-              rows={1.5}
-              placeholder="Ex: Incroyable, surtout la sauce !"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
+        <div className="pt-4 border-t-2 border-dashed border-border/80 animate-in fade-in slide-in-from-top-4">
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-grow flex items-center">
+              <input 
+                type="text"
+                placeholder="Un mot à dire ? (Optionnel) 🌮"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !isSubmitting && handleSubmit()}
+                className="w-full pr-12 pl-4 h-11 rounded-xl border-2 border-border bg-card text-foreground font-medium focus:outline-none focus:border-primary/50 transition-colors text-sm"
+                disabled={isSubmitting}
+              />
+              <button 
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="absolute right-1 w-9 h-9 rounded-lg bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                title="Envoyer"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <span className="text-base">🚀</span>
+                )}
+              </button>
+            </div>
             {isEditing && (
-              <Button
+              <button
                 onClick={() => setIsEditing(false)}
-                variant="outline"
-                className="flex-1 h-11 text-sm font-display font-black rounded-xl border-2 hover:bg-muted cursor-pointer"
+                className="text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer flex-shrink-0"
               >
                 Annuler
-              </Button>
+              </button>
             )}
-            <Button 
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex-[2] h-11 text-base font-display font-black bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all cursor-pointer"
-            >
-              {isSubmitting ? "Envoi..." : "Valider ma note 🚀"}
-            </Button>
           </div>
         </div>
       )}
