@@ -34,7 +34,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
           <Button
             onClick={() => {
               if (myRating) {
-                setSelectedScore(myRating.score || null);
+                setSelectedScore(myRating.score !== undefined && myRating.score !== null ? myRating.score : -1);
                 setComment(myRating.comment || "");
                 setIsEditing(true);
               }
@@ -50,7 +50,9 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               {ratings.map(r => (
                 <div key={r._id} className="bg-muted px-4 py-2 rounded-2xl border-2 border-border flex flex-col gap-1">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-primary text-xl">{r.score}/10</span> 
+                    <span className="font-bold text-primary text-xl">
+                      {r.score !== undefined && r.score !== null ? `${r.score}/10` : "⏭️ Passe cet arrêt"}
+                    </span> 
                     <span className="text-sm font-bold opacity-70">{r.guestName}</span>
                   </div>
                   {r.comment && <p className="text-sm italic font-medium">&ldquo;{r.comment}&rdquo;</p>}
@@ -68,12 +70,12 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   }
 
   const handleSubmit = async () => {
-    if (!selectedScore) return;
+    if (selectedScore === null) return;
     setIsSubmitting(true);
     await addRating({ 
       placeId, 
       guestName, 
-      score: selectedScore,
+      score: selectedScore === -1 ? undefined : selectedScore,
       comment: comment.trim() || undefined
     });
     setIsSubmitting(false);
@@ -83,7 +85,9 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   return (
     <Card className="border-4 border-secondary rounded-[2rem] bg-secondary/5 shadow-2xl mt-8 transition-all">
       <CardContent className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <h3 className="text-xl sm:text-3xl font-display font-black text-center text-foreground">How is the food?</h3>
+        <h3 className="text-xl sm:text-3xl font-display font-black text-center text-foreground">
+          {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "How is the food?"}
+        </h3>
         
         <div className="flex flex-col gap-2 sm:gap-3 w-full max-w-sm mx-auto">
           <div className="flex justify-between gap-1.5 sm:gap-2">
@@ -118,16 +122,29 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               </Button>
             ))}
           </div>
+          <Button 
+            onClick={() => setSelectedScore(-1)}
+            className={`w-full h-12 text-sm sm:text-base border-2 sm:border-[3px] rounded-xl shadow-sm hover:-translate-y-0.5 font-display font-black transition-all ${
+              selectedScore === -1 
+                ? "bg-amber-500 text-white border-amber-600 scale-105" 
+                : "bg-card hover:bg-amber-500/10 border-amber-500/30 text-amber-600 hover:text-amber-700"
+            }`}
+            variant="outline"
+          >
+            ⏭️ Passer / Ne pas manger ici
+          </Button>
         </div>
 
         {selectedScore !== null && (
           <div className="space-y-4 pt-4 border-t-4 border-primary/10 animate-in fade-in slide-in-from-top-4">
             <div className="space-y-2">
-              <label className="text-lg font-bold font-display px-2">Un mot à dire ? (Optionnel)</label>
+              <label className="text-lg font-bold font-display px-2">
+                {selectedScore === -1 ? "Une raison particulière ? (Optionnel)" : "Un mot à dire ? (Optionnel)"}
+              </label>
               <textarea 
                 className="w-full p-4 rounded-2xl border-4 border-border bg-card text-foreground font-medium resize-none focus:outline-none focus:border-primary/50 transition-colors"
                 rows={2}
-                placeholder="Ex: Incroyable, surtout la sauce !"
+                placeholder={selectedScore === -1 ? "Ex: Trop rassasié, allergies, ou je regarde ! 🥦" : "Ex: Incroyable, surtout la sauce !"}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
               />
@@ -147,7 +164,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
                 disabled={isSubmitting}
                 className="flex-[2] h-16 text-2xl font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all"
               >
-                {isSubmitting ? "Envoi..." : "VALIDER MA NOTE 🚀"}
+                {isSubmitting ? "Envoi..." : selectedScore === -1 ? "VALIDER PASSER 🚀" : "VALIDER MA NOTE 🚀"}
               </Button>
             </div>
           </div>

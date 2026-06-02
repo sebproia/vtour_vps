@@ -136,8 +136,9 @@ export default function TourRecap({ tourId }: { tourId: string }) {
             {recap.places
               .sort((a, b) => a.order - b.order)
               .map((place) => {
-                const averageScore = place.ratings.length > 0
-                  ? (place.ratings.reduce((acc, curr) => acc + (curr.score || 0), 0) / place.ratings.length).toFixed(1)
+                const ratedRatings = place.ratings.filter(r => r.score !== undefined && r.score !== null);
+                const averageScore = ratedRatings.length > 0
+                  ? (ratedRatings.reduce((acc, curr) => acc + (curr.score || 0), 0) / ratedRatings.length).toFixed(1)
                   : null;
                 const currentPhotoIndex = photoIndexes[place._id] || 0;
                 const currentPhoto = place.photos[currentPhotoIndex]?.url || place.photos[0]?.url;

@@ -16,7 +16,7 @@ export const addRating = mutation({
   args: { 
     placeId: v.id("places"), 
     guestName: v.string(), 
-    score: v.number(),
+    score: v.optional(v.number()),
     comment: v.optional(v.string())
   },
   handler: async (ctx, args) => {
