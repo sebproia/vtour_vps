@@ -300,70 +300,80 @@ export default function TourList() {
           {/* Public Tours Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {publicTours.map((tour) => (
-              <Card key={tour._id} className="border-2 sm:border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all bg-card">
-                {/* Visual Preview Photos */}
-                <div className="relative">
-                  {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
-                    <div className="flex gap-1.5 px-4 pt-4 select-none">
-                      {tour.previewPhotos.map((url, i) => (
-                        <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
-                          <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
+              <div key={tour._id} className="relative group">
+                <Link href={`/recap/${tour._id}`} className="block">
+                  <Card className="border-2 sm:border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all bg-card">
+                    {/* Visual Preview Photos */}
+                    <div className="relative">
+                      {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
+                        <div className="flex gap-1.5 px-4 pt-4 select-none">
+                          {tour.previewPhotos.map((url, i) => (
+                            <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
+                              <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="px-4 pt-4 select-none">
-                      <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
-                        🍩 Pas encore de photos de dégustation
-                      </div>
-                    </div>
-                  )}
+                      ) : (
+                        <div className="px-4 pt-4 select-none">
+                          <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
+                            🍩 Pas encore de photos de dégustation
+                          </div>
+                        </div>
+                      )}
 
-                  {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
-                  {tour.status === "completed" && tour.averageScore && (
-                    <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none">
-                      ⭐ {tour.averageScore}
+                      {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
+                      {tour.status === "completed" && tour.averageScore && (
+                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none">
+                          ⭐ {tour.averageScore}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <CardHeader className="pt-4 pb-3">
-                  <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
-                    {tour.name}
-                  </CardTitle>
-                  <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
-                    <span className="text-secondary font-bold">📅 {(() => {
-                      const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
-                      try {
-                        const d = new Date(dateStr);
-                        return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-                      } catch {
-                        return dateStr;
-                      }
-                    })()}</span>
-                    <span className="text-muted-foreground/60">•</span>
-                    <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
-                  </CardDescription>
-                </CardHeader>
-                
-                {/* Compact actions container */}
-                <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1">
-                  <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider">Découverte</span>
-                  <Button 
-                    disabled={isImporting !== null}
-                    onClick={() => handleImport(tour._id)}
-                    className="h-9 px-4 text-xs font-display font-black border-2 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-[0_2.5px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    {isImporting === tour._id ? (
-                      <>Importation...</>
-                    ) : (
-                      <>
-                        <Download className="w-3.5 h-3.5" /> Importer 📥
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </Card>
+                    <CardHeader className="pt-4 pb-3">
+                      <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
+                        {tour.name}
+                      </CardTitle>
+                      <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
+                        <span className="text-secondary font-bold">📅 {(() => {
+                          const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
+                          try {
+                            const d = new Date(dateStr);
+                            return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+                          } catch {
+                            return dateStr;
+                          }
+                        })()}</span>
+                        <span className="text-muted-foreground/60">•</span>
+                        <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
+                      </CardDescription>
+                    </CardHeader>
+                    
+                    {/* Compact actions container */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] font-black py-0.5 px-2 bg-secondary/15 text-secondary-foreground rounded-full border border-secondary/20 text-[10px] font-bold">
+                        PUBLIC
+                      </span>
+                      <Button 
+                        disabled={isImporting !== null}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleImport(tour._id);
+                        }}
+                        className="h-9 px-4 text-xs font-display font-black border-2 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-[0_2.5px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        {isImporting === tour._id ? (
+                          <>Importation...</>
+                        ) : (
+                          <>
+                            <Download className="w-3.5 h-3.5" /> Importer 📥
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                </Link>
+              </div>
             ))}
 
             {publicTours.length === 0 && (
