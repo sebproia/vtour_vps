@@ -16,19 +16,34 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   const [selectedScore, setSelectedScore] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   
   const hasRated = ratings?.some(r => r.guestName === guestName);
 
   if (ratings === undefined) return null;
 
-  if (hasRated) {
+  if (hasRated && !isEditing) {
+    const myRating = ratings.find(r => r.guestName === guestName);
     return (
-      <Card className="border-4 border-green-500/30 bg-green-500/5 rounded-[2rem] shadow-xl mt-8">
+      <Card className="border-4 border-green-500/30 bg-green-500/5 rounded-[2rem] shadow-xl mt-8 animate-in fade-in zoom-in duration-300">
         <CardContent className="p-8 text-center space-y-4">
           <div className="text-5xl">✅</div>
           <h3 className="text-3xl font-display font-black text-green-700">Noted!</h3>
           <p className="text-lg font-medium text-green-700/80">Wait for the organizer to move to the next stop.</p>
           
+          <Button
+            onClick={() => {
+              if (myRating) {
+                setSelectedScore(myRating.score || null);
+                setComment(myRating.comment || "");
+                setIsEditing(true);
+              }
+            }}
+            className="px-6 h-11 text-base font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_3px_0_hsl(190,80%,40%)] hover:translate-y-0.5 hover:shadow-[0_1px_0_hsl(190,80%,40%)] transition-all rounded-xl"
+          >
+            Modifier ma note ✏️
+          </Button>
+
           <div className="mt-6 p-4 bg-white rounded-2xl border-4 border-green-500/20 text-left">
             <h4 className="font-display font-bold text-lg mb-2">Group Vibe:</h4>
             <div className="flex flex-col gap-2">
@@ -62,6 +77,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
       comment: comment.trim() || undefined
     });
     setIsSubmitting(false);
+    setIsEditing(false);
   };
 
   return (
@@ -116,13 +132,24 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
                 onChange={(e) => setComment(e.target.value)}
               />
             </div>
-            <Button 
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="w-full h-16 text-2xl font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all"
-            >
-              {isSubmitting ? "Envoi..." : "VALIDER MA NOTE 🚀"}
-            </Button>
+            <div className="flex gap-2">
+              {isEditing && (
+                <Button
+                  onClick={() => setIsEditing(false)}
+                  variant="outline"
+                  className="flex-1 h-16 text-xl font-display font-black rounded-2xl border-2 hover:bg-muted"
+                >
+                  ANNULER
+                </Button>
+              )}
+              <Button 
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex-[2] h-16 text-2xl font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all"
+              >
+                {isSubmitting ? "Envoi..." : "VALIDER MA NOTE 🚀"}
+              </Button>
+            </div>
           </div>
         )}
         

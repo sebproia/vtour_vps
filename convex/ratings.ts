@@ -26,10 +26,13 @@ export const addRating = mutation({
       .withIndex("by_place", (q) => q.eq("placeId", args.placeId))
       .collect();
 
-    const alreadyRated = existingRatings.some(r => r.guestName === args.guestName);
+    const existingRating = existingRatings.find(r => r.guestName === args.guestName);
 
-    if (alreadyRated) {
-      throw new Error("You already rated this place!");
+    if (existingRating) {
+      return await ctx.db.patch(existingRating._id, {
+        score: args.score,
+        comment: args.comment,
+      });
     }
 
     return await ctx.db.insert("ratings", {
