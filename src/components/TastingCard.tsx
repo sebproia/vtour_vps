@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PhotoWall from "@/components/PhotoWall";
 import { Loader2, Send } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function TastingCard({ placeId, guestName }: { placeId: Id<"places">, guestName: string }) {
   const addRating = useMutation(api.ratings.addRating);
@@ -20,6 +21,13 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   const touchStartAngle = useRef<number>(0);
   const touchStartScore = useRef<number>(5.0);
   const [isDragging, setIsDragging] = useState(false);
+  const [shouldWiggle, setShouldWiggle] = useState(true);
+
+  useEffect(() => {
+    if (isDragging) {
+      setShouldWiggle(false);
+    }
+  }, [isDragging]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -123,6 +131,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isSubmitting) return;
     e.preventDefault();
+    e.stopPropagation();
     
     const element = e.currentTarget;
     element.setPointerCapture(e.pointerId);
@@ -142,6 +151,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || isSubmitting) return;
     e.preventDefault();
+    e.stopPropagation();
     
     const rect = e.currentTarget.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
@@ -163,6 +173,8 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging) return;
+    e.preventDefault();
+    e.stopPropagation();
     e.currentTarget.releasePointerCapture(e.pointerId);
     setIsDragging(false);
   };
@@ -191,13 +203,50 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
             style={{ touchAction: "none" }}
           >
+            {/* Left Rotation Hint */}
+            <motion.div 
+              className="absolute -left-6 top-1/2 pointer-events-none select-none text-primary/45 flex flex-col items-center"
+              animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-46%", "-50%"] }}
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+            >
+              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-12">
+                <path d="M4 28 C 1 20, 4 10, 14 6" />
+                <path d="M8 6 L14 6 L14 12" />
+              </svg>
+            </motion.div>
+
+            {/* Right Rotation Hint */}
+            <motion.div 
+              className="absolute -right-6 top-1/2 pointer-events-none select-none text-primary/45 flex flex-col items-center"
+              animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-54%", "-50%"] }}
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", delay: 1.25 }}
+            >
+              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[192deg]">
+                <path d="M4 28 C 1 20, 4 10, 14 6" />
+                <path d="M8 6 L14 6 L14 12" />
+              </svg>
+            </motion.div>
+
             {/* Rotating Donut image */}
-            <div 
-              className="absolute inset-0 transition-transform duration-75 ease-out select-none pointer-events-none"
+            <motion.div 
+              className="absolute inset-0 select-none pointer-events-none"
+              animate={
+                shouldWiggle 
+                  ? { rotate: [donutRotation, donutRotation - 15, donutRotation + 12, donutRotation - 8, donutRotation + 4, donutRotation] } 
+                  : { rotate: donutRotation }
+              }
+              transition={
+                shouldWiggle 
+                  ? { duration: 1.4, ease: "easeInOut" } 
+                  : { type: "tween", duration: 0.05 }
+              }
+              onAnimationComplete={() => setShouldWiggle(false)}
               style={{ 
-                transform: `rotate(${donutRotation}deg)`,
                 backgroundImage: "url('/donut-dial.png')",
                 backgroundSize: "contain",
                 backgroundPosition: "center",
@@ -206,11 +255,11 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
             />
             
             {/* Center Hole cutout & Fixed character avatar */}
-            <div className="absolute w-[95px] h-[95px] rounded-full bg-card border-4 border-primary/20 overflow-hidden shadow-inner flex items-center justify-center pointer-events-none select-none">
+            <div className="absolute w-[90px] h-[90px] rounded-full bg-card border-4 border-primary/20 shadow-inner flex items-center justify-center pointer-events-none select-none">
               <img 
                 src={getAvatarSrc(scoreVal)} 
                 alt="Avatar note" 
-                className="w-[85px] h-[85px] object-contain select-none pointer-events-none"
+                className="w-[125px] h-[125px] max-w-none object-contain select-none pointer-events-none z-10 -translate-y-1"
               />
             </div>
           </div>
