@@ -382,28 +382,26 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                       <h3 className="text-2xl sm:text-3xl font-display font-black text-foreground drop-shadow-sm leading-tight">
                         {activePlace.name}
                       </h3>
-                      <p className="text-muted-foreground text-sm flex items-center gap-1">
-                        <MapPin className="w-4 h-4 flex-shrink-0 text-primary" /> {activePlace.address}
-                      </p>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm pt-0.5">
+                        <p className="text-muted-foreground flex items-center gap-1">
+                          <MapPin className="text-primary w-4 h-4 flex-shrink-0" /> {activePlace.address}
+                        </p>
+                        {activePlace.coordinates && (
+                          <button 
+                            className="text-xs font-bold text-primary hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                            onClick={() => {
+                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${activePlace.coordinates?.lat},${activePlace.coordinates?.lng}`, '_blank');
+                            }}
+                          >
+                            <Navigation className="w-3.5 h-3.5" /> Itinéraire Maps 🗺️
+                          </button>
+                        )}
+                      </div>
                       {activePlace.adminComment && (
                         <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 text-primary font-medium text-sm flex gap-2 items-start">
                           <span>💡</span>
                           <span className="italic">{activePlace.adminComment}</span>
                         </div>
-                      )}
-
-                      {/* Direction Button */}
-                      {activePlace.coordinates && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full rounded-xl border-2 font-bold flex items-center justify-center gap-1.5 h-10 hover:bg-muted"
-                          onClick={() => {
-                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${activePlace.coordinates?.lat},${activePlace.coordinates?.lng}`, '_blank');
-                          }}
-                        >
-                          <Navigation className="w-4 h-4 text-primary" /> Voir l&apos;itinéraire sur Maps 🗺️
-                        </Button>
                       )}
                     </div>
 

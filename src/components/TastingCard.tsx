@@ -122,17 +122,16 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               </Button>
             ))}
           </div>
-          <Button 
+          <button 
             onClick={() => setSelectedScore(-1)}
-            className={`w-full h-12 text-sm sm:text-base border-2 sm:border-[3px] rounded-xl shadow-sm hover:-translate-y-0.5 font-display font-black transition-all ${
+            className={`w-fit mx-auto mt-2 text-xs font-semibold underline decoration-dotted transition-colors cursor-pointer ${
               selectedScore === -1 
-                ? "bg-amber-500 text-white border-amber-600 scale-105" 
-                : "bg-card hover:bg-amber-500/10 border-amber-500/30 text-amber-600 hover:text-amber-700"
+                ? "text-amber-500 font-bold" 
+                : "text-muted-foreground hover:text-amber-500"
             }`}
-            variant="outline"
           >
-            ⏭️ Passer / Ne pas manger ici
-          </Button>
+            {selectedScore === -1 ? "✓ Je passe cet arrêt" : "Je ne mange pas ici / Passer cet arrêt ⏭️"}
+          </button>
         </div>
 
         {selectedScore !== null && (
@@ -154,17 +153,17 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
                 <Button
                   onClick={() => setIsEditing(false)}
                   variant="outline"
-                  className="flex-1 h-16 text-xl font-display font-black rounded-2xl border-2 hover:bg-muted"
+                  className="flex-1 h-11 text-sm font-display font-black rounded-xl border-2 hover:bg-muted"
                 >
-                  ANNULER
+                  Annuler
                 </Button>
               )}
               <Button 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-[2] h-16 text-2xl font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_6px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all"
+                className="flex-[2] h-11 text-base font-display font-black bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all"
               >
-                {isSubmitting ? "Envoi..." : selectedScore === -1 ? "VALIDER PASSER 🚀" : "VALIDER MA NOTE 🚀"}
+                {isSubmitting ? "Envoi..." : selectedScore === -1 ? "Valider ⏭️" : "Valider ma note 🚀"}
               </Button>
             </div>
           </div>
