@@ -61,6 +61,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [travelTimes, setTravelTimes] = useState<Record<string, string>>({});
+  const [travelSeconds, setTravelSeconds] = useState<Record<string, number>>({});
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -70,6 +71,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   useEffect(() => {
     if (!isLoaded || !places || places.length < 2) {
       setTravelTimes({});
+      setTravelSeconds({});
       return;
     }
 
@@ -93,13 +95,16 @@ export default function TourDetails({ tourId }: { tourId: string }) {
       }, (response, status) => {
         if (status === "OK" && response) {
           const times: Record<string, string> = {};
+          const seconds: Record<string, number> = {};
           for (let i = 0; i < origins.length; i++) {
             const element = response.rows[i]?.elements[i];
             if (element && element.status === "OK") {
               times[places[i]._id] = element.duration.text;
+              seconds[places[i]._id] = element.duration.value;
             }
           }
           setTravelTimes(times);
+          setTravelSeconds(seconds);
         }
       });
     } catch (err) {
@@ -140,6 +145,19 @@ export default function TourDetails({ tourId }: { tourId: string }) {
       setViewIndex(tour.currentStepIndex);
     }
   }, [tour?.currentStepIndex]);
+
+  const getTotalTravelTime = () => {
+    const totalSeconds = Object.values(travelSeconds).reduce((sum, s) => sum + s, 0);
+    if (totalSeconds === 0) return "";
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.round((totalSeconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+    }
+    return `${minutes} min`;
+  };
 
   const handleShare = async () => {
     if (!tour || typeof window === "undefined") return;
@@ -592,13 +610,20 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                 <MapPin className="text-primary w-5 h-5 sm:w-6 sm:h-6" /> Trajet
               </h3>
               {places.length > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => window.open(getFullItineraryUrl(), '_blank')}
-                  className="h-8 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all text-xs font-display font-black flex items-center gap-1 cursor-pointer"
-                >
-                  <Navigation className="w-3.5 h-3.5" /> Itinéraire Complet
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => window.open(getFullItineraryUrl(), '_blank')}
+                    className="h-8 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all text-xs font-display font-black flex items-center gap-1 cursor-pointer"
+                  >
+                    <Navigation className="w-3.5 h-3.5" /> Itinéraire Complet
+                  </Button>
+                  {getTotalTravelTime() && (
+                    <span className="text-[11px] font-bold text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-lg border border-border select-none flex items-center gap-1">
+                      🚶 {getTotalTravelTime()}
+                    </span>
+                  )}
+                </div>
               )}
               {isDraft && places.length > 2 && (
                 <Button 
