@@ -48,6 +48,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [copied, setCopied] = useState(false);
+  const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null);
 
   const handleShare = async () => {
     if (!tour || typeof window === "undefined") return;
@@ -228,7 +229,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
 
           {isDraft && places.length > 0 && (
             <Button size="sm" onClick={() => startLiveMode({ tourId: tId })} className="h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all font-display font-black">
-              <Play className="mr-1.5 w-4 h-4" /> START
+              <Play className="mr-1.5 w-4 h-4" /> {tour.currentStepIndex > 0 ? "RESUME" : "START"}
             </Button>
           )}
           {tour.status === "completed" && (
@@ -296,6 +297,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                     {places.map((place, index) => {
                       const isCurrentStep = isLive && tour.currentStepIndex === place.order;
                       const isPassed = tour.currentStepIndex > place.order || tour.status === "completed";
+                      const isExpanded = expandedPlaceId === place._id || isCurrentStep;
                       
                       return (
                         <Draggable 
@@ -310,12 +312,18 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                               {...provided.draggableProps}
                               style={{ ...provided.draggableProps.style }}
                             >
-                              <Card className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${
-                                isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg z-10" : 
-                                isPassed ? "border-muted bg-muted/20 opacity-70" :
-                                "border-border bg-card"
-                              } ${snapshot.isDragging ? "shadow-2xl ring-2 ring-primary z-50" : ""} ${isDraft ? "cursor-grab active:cursor-grabbing" : ""}`}
+                              <Card 
+                                className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${
+                                  isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg z-10" : 
+                                  isPassed ? "border-muted bg-muted/20 opacity-70 cursor-pointer hover:opacity-100 hover:border-secondary/50" :
+                                  "border-border bg-card cursor-pointer hover:border-secondary/50"
+                                } ${snapshot.isDragging ? "shadow-2xl ring-2 ring-primary z-50" : ""} ${isDraft ? "cursor-grab active:cursor-grabbing" : ""}`}
                                 {...(isDraft ? provided.dragHandleProps : {})}
+                                onClick={() => {
+                                  if (!isDraft) {
+                                    setExpandedPlaceId(expandedPlaceId === place._id ? null : place._id);
+                                  }
+                                }}
                               >
                                 <div className="flex p-3 sm:p-4 gap-3 items-start">
                                   <div className={`w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center rounded-full border-2 font-display font-black text-base sm:text-lg ${
@@ -340,7 +348,10 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                         variant="outline" 
                                         size="sm" 
                                         className="mt-2 rounded-lg border text-xs h-7 font-bold flex items-center gap-1"
-                                        onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank')}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank');
+                                        }}
                                       >
                                         <Navigation className="w-3 h-3" /> Itinéraire
                                       </Button>
@@ -357,8 +368,11 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                     </button>
                                   )}
                                 </div>
-                                {isCurrentStep && (
-                                  <div className="px-3 pb-3 sm:px-4 sm:pb-4 border-t-2 border-secondary/20 pt-4 bg-secondary/5">
+                                {isExpanded && (
+                                  <div 
+                                    className="px-3 pb-3 sm:px-4 sm:pb-4 border-t-2 border-secondary/20 pt-4 bg-secondary/5"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
                                     <TastingCard key={place._id} placeId={place._id} guestName={adminName} />
                                   </div>
                                 )}

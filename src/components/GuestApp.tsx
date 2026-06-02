@@ -19,6 +19,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   
   const [name, setName] = useState("");
   const [hasJoined, setHasJoined] = useState(false);
+  const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedName = localStorage.getItem(`vitour_${tId}_name`);
@@ -141,6 +142,56 @@ export default function GuestApp({ tourId }: { tourId: string }) {
             <div className="text-4xl mb-2">🤫</div>
             <h3 className="text-lg font-display font-black text-white">Prochaine adresse...</h3>
             <p className="text-sm font-bold bg-white/20 text-white px-3 py-0.5 rounded-full inline-block mt-1 transform -rotate-2">Mystère !</p>
+          </div>
+        )}
+
+        {/* Past Stops Section */}
+        {places.filter(p => p.order < tour.currentStepIndex).length > 0 && (
+          <div className="mt-8 space-y-3">
+            <h3 className="text-xl font-display font-black text-white flex items-center gap-2">
+              ⏪ Arrêts précédents
+            </h3>
+            <div className="space-y-3">
+              {places
+                .filter(p => p.order < tour.currentStepIndex)
+                .sort((a, b) => b.order - a.order)
+                .map((place) => {
+                  const isExpanded = expandedPlaceId === place._id;
+                  return (
+                    <Card 
+                      key={place._id}
+                      className={`border-2 rounded-2xl overflow-hidden transition-all bg-white/10 border-white/20 text-white cursor-pointer ${
+                        isExpanded ? "ring-2 ring-[hsl(190,80%,50%)] bg-white/15" : "hover:bg-white/15"
+                      }`}
+                      onClick={() => setExpandedPlaceId(isExpanded ? null : place._id)}
+                    >
+                      <div className="flex p-4 gap-3 items-center justify-between">
+                        <div className="flex gap-3 items-center min-w-0">
+                          <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-white/20 border border-white/30 font-display font-black text-sm">
+                            {place.order + 1}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-base font-bold font-display truncate">
+                              {place.name}
+                            </h4>
+                            <p className="text-white/60 text-xs truncate">
+                              {place.address}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-xs font-bold text-white/50 bg-white/10 px-2 py-1 rounded-lg">
+                          {isExpanded ? "Fermer 🔼" : "Modifier ✏️"}
+                        </div>
+                      </div>
+                      {isExpanded && (
+                        <div className="p-4 border-t border-white/10 bg-black/20" onClick={(e) => e.stopPropagation()}>
+                          <TastingCard key={place._id} placeId={place._id} guestName={name} />
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+            </div>
           </div>
         )}
       </div>

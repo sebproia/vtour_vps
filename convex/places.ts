@@ -67,7 +67,6 @@ export const startLiveMode = mutation({
 
     return await ctx.db.patch(args.tourId, {
       status: "live",
-      currentStepIndex: 0
     });
   }
 });
