@@ -25,11 +25,11 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   if (hasRated && !isEditing) {
     const myRating = ratings.find(r => r.guestName === guestName);
     return (
-      <Card className="border-4 border-green-500/30 bg-green-500/5 rounded-[2rem] shadow-xl mt-8 animate-in fade-in zoom-in duration-300">
-        <CardContent className="p-8 text-center space-y-4">
-          <div className="text-5xl">✅</div>
-          <h3 className="text-3xl font-display font-black text-green-700">Noted!</h3>
-          <p className="text-lg font-medium text-green-700/80">Wait for the organizer to move to the next stop.</p>
+      <div className="text-center space-y-4 pt-2 animate-in fade-in duration-300">
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-4xl">✅</div>
+          <h3 className="text-2xl font-display font-black text-green-600">Noté !</h3>
+          <p className="text-xs font-semibold text-muted-foreground">En attente du lancement de l&apos;arrêt suivant…</p>
           
           <Button
             onClick={() => {
@@ -39,33 +39,33 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
                 setIsEditing(true);
               }
             }}
-            className="px-6 h-11 text-base font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_3px_0_hsl(190,80%,40%)] hover:translate-y-0.5 hover:shadow-[0_1px_0_hsl(190,80%,40%)] transition-all rounded-xl"
+            className="mt-1 h-9 px-4 text-xs font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 hover:shadow-[0_0px_0_hsl(190,80%,40%)] transition-all rounded-xl cursor-pointer"
           >
-            Modifier ma note ✏️
+            Modifier mon avis ✏️
           </Button>
+        </div>
 
-          <div className="mt-6 p-4 bg-white rounded-2xl border-4 border-green-500/20 text-left">
-            <h4 className="font-display font-bold text-lg mb-2">Group Vibe:</h4>
-            <div className="flex flex-col gap-2">
-              {ratings.map(r => (
-                <div key={r._id} className="bg-muted px-4 py-2 rounded-2xl border-2 border-border flex flex-col gap-1">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-primary text-xl">
-                      {r.score !== undefined && r.score !== null ? `${r.score}/10` : "⏭️ Passe cet arrêt"}
-                    </span> 
-                    <span className="text-sm font-bold opacity-70">{r.guestName}</span>
-                  </div>
-                  {r.comment && <p className="text-sm italic font-medium">&ldquo;{r.comment}&rdquo;</p>}
+        {/* Group Vibe - Clean flat list with dashed separator */}
+        <div className="mt-6 pt-4 border-t-2 border-dashed border-border/80 text-left space-y-3">
+          <h4 className="font-display font-black text-lg text-primary">Group Vibe 🍔</h4>
+          <div className="grid grid-cols-1 gap-2">
+            {ratings.map(r => (
+              <div key={r._id} className="flex justify-between items-center bg-muted/60 px-4 py-2 rounded-xl border border-border/60">
+                <span className="text-sm font-bold text-foreground">{r.guestName}</span>
+                <div className="flex items-center gap-2">
+                  {r.comment && <span className="text-xs text-muted-foreground italic truncate max-w-[160px]">&ldquo;{r.comment}&rdquo;</span>}
+                  <span className="font-black text-primary bg-primary/10 px-2.5 py-0.5 rounded-lg text-xs border border-primary/20 flex-shrink-0">
+                    {r.score !== undefined && r.score !== null ? `${r.score}/10` : "⏭️ Passe"}
+                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-          
-          <div className="mt-8 pt-6 border-t-4 border-green-500/20">
-            <PhotoWall placeId={placeId} guestName={guestName} />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        {/* Photo Wall - directly inside, flat */}
+        <PhotoWall placeId={placeId} guestName={guestName} />
+      </div>
     );
   }
 
@@ -82,97 +82,101 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
     setIsEditing(false);
   };
 
-  return (
-    <Card className="border-4 border-secondary rounded-[2rem] bg-secondary/5 shadow-2xl mt-8 transition-all">
-      <CardContent className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <h3 className="text-xl sm:text-3xl font-display font-black text-center text-foreground">
-          {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "How is the food?"}
-        </h3>
-        
-        <div className="flex flex-col gap-2 sm:gap-3 w-full max-w-sm mx-auto">
-          <div className="flex justify-between gap-1.5 sm:gap-2">
-            {SCORES.slice(0, 5).map(score => (
-              <Button 
-                key={score}
-                onClick={() => setSelectedScore(score)}
-                className={`flex-1 h-11 sm:h-14 md:h-16 px-0 text-lg sm:text-xl md:text-2xl border-2 sm:border-[3px] md:border-4 rounded-xl sm:rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
-                  selectedScore === score 
-                    ? "bg-primary text-primary-foreground border-primary scale-110" 
-                    : "bg-card hover:bg-accent border-border text-foreground"
-                }`}
-                variant="outline"
-              >
-                {score}
-              </Button>
-            ))}
-          </div>
-          <div className="flex justify-between gap-1.5 sm:gap-2">
-            {SCORES.slice(5, 10).map(score => (
-              <Button 
-                key={score}
-                onClick={() => setSelectedScore(score)}
-                className={`flex-1 h-11 sm:h-14 md:h-16 px-0 text-lg sm:text-xl md:text-2xl border-2 sm:border-[3px] md:border-4 rounded-xl sm:rounded-[1.5rem] shadow-sm hover:-translate-y-1 font-display font-black transition-all ${
-                  selectedScore === score 
-                    ? "bg-primary text-primary-foreground border-primary scale-110" 
-                    : "bg-card hover:bg-accent border-border text-foreground"
-                }`}
-                variant="outline"
-              >
-                {score}
-              </Button>
-            ))}
-          </div>
-          <button 
-            onClick={() => setSelectedScore(-1)}
-            className={`w-fit mx-auto mt-2 text-xs font-semibold underline decoration-dotted transition-colors cursor-pointer ${
-              selectedScore === -1 
-                ? "text-amber-500 font-bold" 
-                : "text-muted-foreground hover:text-amber-500"
-            }`}
-          >
-            {selectedScore === -1 ? "✓ Je passe cet arrêt" : "Je ne mange pas ici / Passer cet arrêt ⏭️"}
-          </button>
-        </div>
+  const handlePass = async () => {
+    setIsSubmitting(true);
+    await addRating({ 
+      placeId, 
+      guestName, 
+      score: undefined,
+      comment: undefined
+    });
+    setIsSubmitting(false);
+    setIsEditing(false);
+  };
 
-        {selectedScore !== null && (
-          <div className="space-y-4 pt-4 border-t-4 border-primary/10 animate-in fade-in slide-in-from-top-4">
-            <div className="space-y-2">
-              <label className="text-lg font-bold font-display px-2">
-                {selectedScore === -1 ? "Une raison particulière ? (Optionnel)" : "Un mot à dire ? (Optionnel)"}
-              </label>
-              <textarea 
-                className="w-full p-4 rounded-2xl border-4 border-border bg-card text-foreground font-medium resize-none focus:outline-none focus:border-primary/50 transition-colors"
-                rows={2}
-                placeholder={selectedScore === -1 ? "Ex: Trop rassasié, allergies, ou je regarde ! 🥦" : "Ex: Incroyable, surtout la sauce !"}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2">
-              {isEditing && (
-                <Button
-                  onClick={() => setIsEditing(false)}
-                  variant="outline"
-                  className="flex-1 h-11 text-sm font-display font-black rounded-xl border-2 hover:bg-muted"
-                >
-                  Annuler
-                </Button>
-              )}
-              <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="flex-[2] h-11 text-base font-display font-black bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all"
-              >
-                {isSubmitting ? "Envoi..." : selectedScore === -1 ? "Valider ⏭️" : "Valider ma note 🚀"}
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t-4 border-secondary/20">
-          <PhotoWall placeId={placeId} guestName={guestName} />
+  return (
+    <div className="space-y-4 pt-2">
+      <h3 className="text-lg font-display font-black text-center text-foreground">
+        {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "Qu&apos;avez-vous pensé de ce stop ? 🍔"}
+      </h3>
+      
+      <div className="flex flex-col gap-2 w-full max-w-sm mx-auto">
+        <div className="flex justify-between gap-1.5">
+          {SCORES.slice(0, 5).map(score => (
+            <Button 
+              key={score}
+              onClick={() => setSelectedScore(score)}
+              className={`flex-1 h-11 text-base border-2 rounded-xl shadow-sm hover:-translate-y-0.5 font-display font-black transition-all cursor-pointer ${
+                selectedScore === score 
+                  ? "bg-primary text-primary-foreground border-primary scale-105 shadow-md" 
+                  : "bg-card hover:bg-accent border-border text-foreground"
+              }`}
+              variant="outline"
+            >
+              {score}
+            </Button>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex justify-between gap-1.5">
+          {SCORES.slice(5, 10).map(score => (
+            <Button 
+              key={score}
+              onClick={() => setSelectedScore(score)}
+              className={`flex-1 h-11 text-base border-2 rounded-xl shadow-sm hover:-translate-y-0.5 font-display font-black transition-all cursor-pointer ${
+                selectedScore === score 
+                  ? "bg-primary text-primary-foreground border-primary scale-105 shadow-md" 
+                  : "bg-card hover:bg-accent border-border text-foreground"
+              }`}
+              variant="outline"
+            >
+              {score}
+            </Button>
+          ))}
+        </div>
+        <button 
+          onClick={handlePass}
+          disabled={isSubmitting}
+          className="w-fit mx-auto mt-2 text-xs font-semibold underline decoration-dotted text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer"
+        >
+          Passer cet arrêt ⏭️
+        </button>
+      </div>
+
+      {selectedScore !== null && selectedScore !== -1 && (
+        <div className="space-y-4 pt-4 border-t-2 border-dashed border-border/80 animate-in fade-in slide-in-from-top-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold font-display px-1">Un mot à dire ? (Optionnel)</label>
+            <textarea 
+              className="w-full p-3 rounded-xl border-2 border-border bg-card text-foreground font-medium resize-none focus:outline-none focus:border-primary/50 transition-colors text-sm"
+              rows={1.5}
+              placeholder="Ex: Incroyable, surtout la sauce !"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            {isEditing && (
+              <Button
+                onClick={() => setIsEditing(false)}
+                variant="outline"
+                className="flex-1 h-11 text-sm font-display font-black rounded-xl border-2 hover:bg-muted cursor-pointer"
+              >
+                Annuler
+              </Button>
+            )}
+            <Button 
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex-[2] h-11 text-base font-display font-black bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all cursor-pointer"
+            >
+              {isSubmitting ? "Envoi..." : "Valider ma note 🚀"}
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Live Feed at the bottom, flat */}
+      <PhotoWall placeId={placeId} guestName={guestName} />
+    </div>
   );
 }
