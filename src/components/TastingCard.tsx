@@ -6,7 +6,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import PhotoWall from "@/components/PhotoWall";
-import { Loader2 } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 
 const SCORES = Array.from({ length: 10 }, (_, i) => i + 1);
 
@@ -197,7 +197,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
                 ) : (
-                  <span className="text-base">💬</span>
+                  <Send className="w-4 h-4" />
                 )}
               </button>
             </div>
