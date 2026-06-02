@@ -395,6 +395,11 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   />
                 ))}
               </div>
+              {viewIndex < places.length - 1 && travelTimes[places[viewIndex]._id] && (
+                <div className="text-[11px] font-bold text-primary flex items-center gap-1 mt-1 pt-2 border-t border-border/40 select-none">
+                  <span>🚶 prochain arrêt : {travelTimes[places[viewIndex]._id].replace('mins', 'min')}</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -468,8 +473,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                         isPassed ? "bg-green-100 text-green-700 border-green-300" :
                         "bg-muted text-muted-foreground border-muted-foreground/20"
                       }`}>
-                        {isCurrentStep ? "📍 STOP ACTIF" :
-                         isPassed ? "✅ ARRÊT PASSÉ" :
+                        {isCurrentStep ? "📍 EN COURS" :
+                         isPassed ? "✅ TERMINÉ" :
                          "🔒 ARRÊT FUTUR"}
                       </span>
                       <span className="text-sm font-bold font-display text-muted-foreground bg-muted/30 px-3 py-1 rounded-full">
@@ -490,11 +495,6 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                           {activePlace.openingHours && (
                             <p className="text-[11px] font-bold text-amber-600 flex items-center gap-1 pl-5">
                               🕒 {activePlace.openingHours}
-                            </p>
-                          )}
-                          {viewIndex < places.length - 1 && travelTimes[activePlace._id] && (
-                            <p className="text-[11px] font-bold text-primary flex items-center gap-1 pl-5">
-                              🚶 prochain arrêt : {travelTimes[activePlace._id].replace('mins', 'min')}
                             </p>
                           )}
                         </div>
