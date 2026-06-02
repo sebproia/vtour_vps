@@ -149,21 +149,30 @@ export default function TourList() {
                 <Link href={tour.status === "completed" ? `/recap/${tour._id}` : `/tour/${tour._id}`} className="block">
                   <Card className="border-2 sm:border-4 border-primary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1.5 hover:border-primary/40 bg-card">
                     {/* Visual Preview Photos */}
-                    {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
-                      <div className="flex gap-1.5 px-4 pt-4 select-none">
-                        {tour.previewPhotos.map((url, i) => (
-                          <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
-                            <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="px-4 pt-4 select-none">
-                        <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
-                          🍩 Pas encore de photos de dégustation
+                    <div className="relative">
+                      {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
+                        <div className="flex gap-1.5 px-4 pt-4 select-none">
+                          {tour.previewPhotos.map((url, i) => (
+                            <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
+                              <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="px-4 pt-4 select-none">
+                          <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
+                            🍩 Pas encore de photos de dégustation
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
+                      {tour.status === "completed" && tour.averageScore && (
+                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none">
+                          ⭐ {tour.averageScore}
+                        </div>
+                      )}
+                    </div>
 
                     <CardHeader className="pt-4 pb-3">
                       <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
@@ -197,11 +206,6 @@ export default function TourList() {
                         {tour.isPublic && (
                           <span className="text-[9px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-900 flex items-center gap-0.5 animate-in zoom-in duration-300" title="Public sur Découvrir">
                             <Globe className="w-2.5 h-2.5" /> PUB
-                          </span>
-                        )}
-                        {tour.status === "completed" && tour.averageScore && (
-                          <span className="flex items-center gap-0.5 bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-200 dark:border-yellow-900">
-                            ⭐ {tour.averageScore}
                           </span>
                         )}
                       </div>
@@ -298,23 +302,32 @@ export default function TourList() {
             {publicTours.map((tour) => (
               <Card key={tour._id} className="border-2 sm:border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all bg-card">
                 {/* Visual Preview Photos */}
-                {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
-                  <div className="flex gap-1.5 px-4 pt-4 select-none">
-                    {tour.previewPhotos.map((url, i) => (
-                      <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
-                        <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 pt-4 select-none">
-                    <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
-                      🍩 Pas encore de photos de dégustation
+                <div className="relative">
+                  {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
+                    <div className="flex gap-1.5 px-4 pt-4 select-none">
+                      {tour.previewPhotos.map((url, i) => (
+                        <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
+                          <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="px-4 pt-4 select-none">
+                      <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
+                        🍩 Pas encore de photos de dégustation
+                      </div>
+                    </div>
+                  )}
 
-                <CardHeader className="pt-4 pb-4">
+                  {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
+                  {tour.status === "completed" && tour.averageScore && (
+                    <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none">
+                      ⭐ {tour.averageScore}
+                    </div>
+                  )}
+                </div>
+
+                <CardHeader className="pt-4 pb-3">
                   <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
                     {tour.name}
                   </CardTitle>
@@ -330,11 +343,6 @@ export default function TourList() {
                     })()}</span>
                     <span className="text-muted-foreground/60">•</span>
                     <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
-                    {tour.status === "completed" && tour.averageScore && (
-                      <span className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-200 dark:border-yellow-900 ml-auto">
-                        ⭐ {tour.averageScore}/10
-                      </span>
-                    )}
                   </CardDescription>
                 </CardHeader>
                 
