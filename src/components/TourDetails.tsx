@@ -273,13 +273,16 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex flex-wrap items-center gap-3 mt-2">
               <span className={`text-sm font-bold py-0.5 px-3 rounded-full border-2 font-display ${
                 isLive ? "bg-red-500 text-white border-red-700 animate-pulse" :
                 tour.status === "completed" ? "bg-green-500 text-white border-green-700" :
                 "bg-accent text-accent-foreground border-accent-foreground/10"
               }`}>
                 {tour.status.toUpperCase()}
+              </span>
+              <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-0.5 rounded-full border border-primary/20">
+                📅 {new Date(tour.date || tour._creationTime).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
               </span>
               <span className="text-sm font-medium text-muted-foreground">{places.length} stops</span>
             </div>
@@ -322,7 +325,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                     </>
                   ) : (
                     <>
-                      <Share2 className="w-4 h-4" /> PARTAGER LE LIEN 🚀
+                      <Share2 className="w-4 h-4" /> PARTAGER LE LIEN
                     </>
                   )}
                 </Button>
@@ -352,21 +355,10 @@ export default function TourDetails({ tourId }: { tourId: string }) {
         // ------------------ RUN DECK VIEW ------------------
         <div className="w-full max-w-xl mx-auto space-y-6 pb-24 animate-in fade-in duration-500">
           {/* Header Controls inside deck */}
-          <div className="flex flex-wrap gap-2 justify-between items-center bg-card p-4 rounded-2xl border-2 border-border shadow-md">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-display font-black text-primary">
-                📍 RUN MODE
-              </span>
-              {places.length > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => window.open(getFullItineraryUrl(), '_blank')}
-                  className="h-8 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all text-xs font-display font-black flex items-center gap-1 cursor-pointer"
-                >
-                  <Navigation className="w-3.5 h-3.5" /> Route Complète 🗺️
-                </Button>
-              )}
-            </div>
+          <div className="flex justify-between items-center bg-card p-4 rounded-2xl border-2 border-border shadow-md">
+            <span className="text-lg font-display font-black text-primary">
+              📍 RUN MODE
+            </span>
             <Button 
               size="sm" 
               onClick={() => pauseTour({ tourId: tId })} 
@@ -497,7 +489,12 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                           </p>
                           {activePlace.openingHours && (
                             <p className="text-[11px] font-bold text-amber-600 flex items-center gap-1 pl-5">
-                              🕒 Horaires aujourd&apos;hui : {activePlace.openingHours}
+                              🕒 Horaires ce jour : {activePlace.openingHours}
+                            </p>
+                          )}
+                          {viewIndex < places.length - 1 && travelTimes[activePlace._id] && (
+                            <p className="text-[11px] font-bold text-primary flex items-center gap-1 pl-5">
+                              🚶 Trajet vers le prochain arrêt : {travelTimes[activePlace._id]} de marche
                             </p>
                           )}
                         </div>
@@ -591,7 +588,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-xl sm:text-2xl font-display font-black text-foreground flex items-center gap-2 mr-2">
-                <MapPin className="text-primary w-5 h-5 sm:w-6 sm:h-6" /> Route
+                <MapPin className="text-primary w-5 h-5 sm:w-6 sm:h-6" /> Trajet
               </h3>
               {places.length > 0 && (
                 <Button
@@ -599,7 +596,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   onClick={() => window.open(getFullItineraryUrl(), '_blank')}
                   className="h-8 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all text-xs font-display font-black flex items-center gap-1 cursor-pointer"
                 >
-                  <Navigation className="w-3.5 h-3.5" /> Itinéraire Complet 🗺️
+                  <Navigation className="w-3.5 h-3.5" /> Itinéraire Complet
                 </Button>
               )}
               {isDraft && places.length > 2 && (
@@ -787,6 +784,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   {tour.status !== "completed" ? (
                     <MapPicker 
                       key={mapPickerKey}
+                      tourDate={tour.date || undefined}
                       onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId) => {
                         setNewName(nameFromMap);
                         setNewAddress(addr);
@@ -872,6 +870,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               {isLoaded ? (
                 <MapPicker 
                   key={`inline-picker-${insertIndex}`}
+                  tourDate={tour.date || undefined}
                   onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId) => {
                     setNewName(nameFromMap);
                     setNewAddress(addr);

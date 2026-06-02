@@ -16,12 +16,14 @@ export default function TourList() {
   const deleteTour = useMutation(api.tours.deleteTour);
   const duplicateTour = useMutation(api.tours.duplicateTour);
   const [newTourName, setNewTourName] = useState("");
+  const [newTourDate, setNewTourDate] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
     if (!newTourName.trim()) return;
-    await createTour({ name: newTourName });
+    await createTour({ name: newTourName, date: newTourDate || undefined });
     setNewTourName("");
+    setNewTourDate("");
     setIsCreating(false);
   };
 
@@ -32,21 +34,35 @@ export default function TourList() {
       {/* Create New Tour UI */}
       {isCreating ? (
         <Card className="border-4 border-secondary/50 rounded-[2rem] bg-secondary/10 shadow-lg">
-          <CardContent className="pt-6 flex flex-col sm:flex-row gap-4">
-            <Input 
-              autoFocus
-              placeholder="e.g. Best Burgers in Brooklyn" 
-              className="h-14 text-xl rounded-xl border-2 font-medium"
-              value={newTourName}
-              onChange={(e) => setNewTourName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            />
-            <Button size="lg" className="h-14 px-8 text-lg font-black font-display bg-primary text-primary-foreground rounded-xl" onClick={handleCreate}>
-              Save
-            </Button>
-            <Button size="lg" variant="ghost" className="h-14 font-black" onClick={() => setIsCreating(false)}>
-              Cancel
-            </Button>
+          <CardContent className="pt-6 flex flex-col sm:flex-row gap-4 items-end sm:items-center">
+            <div className="flex-1 space-y-1 w-full">
+              <label className="text-xs font-bold text-muted-foreground/80 pl-1">Nom du Tour 🍔</label>
+              <Input 
+                autoFocus
+                placeholder="e.g. Best Burgers in Brooklyn" 
+                className="h-14 text-xl rounded-xl border-2 font-medium bg-card"
+                value={newTourName}
+                onChange={(e) => setNewTourName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              />
+            </div>
+            <div className="w-full sm:w-56 space-y-1">
+              <label className="text-xs font-bold text-muted-foreground/80 pl-1">Date du Tour 📅</label>
+              <Input 
+                type="date"
+                className="h-14 text-lg rounded-xl border-2 font-medium bg-card block w-full"
+                value={newTourDate}
+                onChange={(e) => setNewTourDate(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto pt-5 sm:pt-0">
+              <Button size="lg" className="h-14 px-8 text-lg font-black font-display bg-primary text-primary-foreground rounded-xl flex-grow sm:flex-grow-0 cursor-pointer" onClick={handleCreate}>
+                Enregistrer
+              </Button>
+              <Button size="lg" variant="ghost" className="h-14 font-black cursor-pointer" onClick={() => setIsCreating(false)}>
+                Annuler
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -76,10 +92,20 @@ export default function TourList() {
                   {tour.status.toUpperCase()}
                 </span>
               </CardTitle>
-              <CardDescription className="text-lg font-medium flex items-center gap-3">
-                <span>{tour.stopsCount} Stop{tour.stopsCount !== 1 ? "s" : ""} planned</span>
+              <CardDescription className="text-sm font-medium flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
+                <span className="text-primary font-bold">📅 {(() => {
+                  const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
+                  try {
+                    const d = new Date(dateStr);
+                    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+                  } catch {
+                    return dateStr;
+                  }
+                })()}</span>
+                <span className="text-muted-foreground/60">•</span>
+                <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""} planned</span>
                 {tour.status === "completed" && tour.averageScore && (
-                  <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-sm font-bold border border-yellow-200">
+                  <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold border border-yellow-200 ml-auto">
                     ⭐ {tour.averageScore}/10
                   </span>
                 )}

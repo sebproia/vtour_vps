@@ -7,6 +7,7 @@ export default defineSchema({
     status: v.union(v.literal("draft"), v.literal("live"), v.literal("completed")),
     currentStepIndex: v.number(),
     organizerId: v.string(), // Clerk user ID
+    date: v.optional(v.string()),
   }),
   
   places: defineTable({

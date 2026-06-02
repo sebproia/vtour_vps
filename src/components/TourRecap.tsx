@@ -44,11 +44,17 @@ export default function TourRecap({ tourId }: { tourId: string }) {
     );
   }
 
-  const tourDate = new Date(recap.tour._creationTime).toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const tourDate = recap.tour.date 
+    ? new Date(recap.tour.date).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : new Date(recap.tour._creationTime).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
 
   let totalScore = 0;
   let scoreCount = 0;

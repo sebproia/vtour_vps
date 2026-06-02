@@ -10,9 +10,10 @@ const libraries: "places"[] = ["places"];
 interface MapPickerProps {
   onLocationSelect: (name: string, address: string, lat: number, lng: number, openingHours?: string, googlePlaceId?: string) => void;
   initialLocation?: { lat: number; lng: number };
+  tourDate?: string;
 }
 
-export default function MapPicker({ onLocationSelect, initialLocation }: MapPickerProps) {
+export default function MapPicker({ onLocationSelect, initialLocation, tourDate }: MapPickerProps) {
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
@@ -38,8 +39,9 @@ export default function MapPicker({ onLocationSelect, initialLocation }: MapPick
         
         let openingHoursToday = "";
         if (place.opening_hours && place.opening_hours.weekday_text) {
-          const todayIndex = new Date().getDay();
-          const weekdayTextIdx = todayIndex === 0 ? 6 : todayIndex - 1;
+          const dateObj = tourDate ? new Date(tourDate) : new Date();
+          const dayIndex = dateObj.getDay();
+          const weekdayTextIdx = dayIndex === 0 ? 6 : dayIndex - 1;
           const fullText = place.opening_hours.weekday_text[weekdayTextIdx];
           if (fullText) {
             const parts = fullText.split(": ");
