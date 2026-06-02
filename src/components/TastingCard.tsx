@@ -182,10 +182,10 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
 
   const getAvatarConfig = (score: number) => {
     if (score < 3.0) return { src: "/grade-disgusted.png", size: 135 };
-    if (score < 5.5) return { src: "/grade-skeptical.png", size: 145 };
-    if (score < 7.5) return { src: "/grade-happy.png", size: 155 };
-    if (score < 9.0) return { src: "/grade-smiling.png", size: 165 };
-    return { src: "/grade-laughing.png", size: 175 };
+    if (score < 5.5) return { src: "/grade-skeptical.png", size: 150 };
+    if (score < 7.5) return { src: "/grade-happy.png", size: 160 };
+    if (score < 9.0) return { src: "/grade-smiling.png", size: 175 };
+    return { src: "/grade-laughing.png", size: 195 };
   };
 
   const scoreVal = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
