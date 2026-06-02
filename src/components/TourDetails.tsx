@@ -349,34 +349,6 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               </Button>
             </Link>
           )}
-
-          {/* Toggle Public on Marketplace */}
-          <Button
-            size="sm"
-            onClick={async () => {
-              try {
-                await toggleTourPublic({ tourId: tId, isPublic: !tour.isPublic });
-              } catch (error) {
-                console.error("Error toggling public status:", error);
-                alert("Erreur lors de la publication : " + (error as Error).message);
-              }
-            }}
-            className={`h-10 sm:h-12 px-3.5 sm:px-5 text-sm sm:text-base rounded-xl border-2 font-display font-black hover:translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5 ${
-              tour.isPublic
-                ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600 shadow-[0_3px_0_hsl(150,80%,25%)] hover:shadow-[0_1px_0_hsl(150,80%,25%)]"
-                : "bg-card hover:bg-muted text-muted-foreground border-border shadow-[0_3px_0_hsl(0,0%,80%)] hover:shadow-[0_1px_0_hsl(0,0%,80%)] dark:shadow-[0_3px_0_hsl(0,0%,20%)] dark:hover:shadow-[0_1px_0_hsl(0,0%,20%)]"
-            }`}
-          >
-            {tour.isPublic ? (
-              <>
-                <Globe className="w-4 h-4" /> PUBLIC (MARKETPLACE)
-              </>
-            ) : (
-              <>
-                <Lock className="w-4 h-4" /> RENDRE PUBLIC
-              </>
-            )}
-          </Button>
         </div>
       </div>
 

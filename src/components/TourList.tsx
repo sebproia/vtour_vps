@@ -33,6 +33,7 @@ export default function TourList() {
   const deleteTour = useMutation(api.tours.deleteTour);
   const duplicateTour = useMutation(api.tours.duplicateTour);
   const importPublicTour = useMutation(api.tours.importPublicTour);
+  const toggleTourPublic = useMutation(api.tours.toggleTourPublic);
 
   const [activeTab, setActiveTab] = useState<"my-tours" | "marketplace">("my-tours");
   const [newTourName, setNewTourName] = useState("");
@@ -145,7 +146,7 @@ export default function TourList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tours.map((tour) => (
               <div key={tour._id} className="relative group">
-                <Link href={`/tour/${tour._id}`} className="block">
+                <Link href={tour.status === "completed" ? `/recap/${tour._id}` : `/tour/${tour._id}`} className="block">
                   <Card className="border-2 sm:border-4 border-primary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1.5 hover:border-primary/40 bg-card">
                     {/* Visual Preview Photos */}
                     {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
@@ -164,23 +165,9 @@ export default function TourList() {
                       </div>
                     )}
 
-                    <CardHeader className="pt-4 pb-4">
-                      <CardTitle className="text-xl sm:text-2xl font-bold flex items-center justify-between font-display gap-2">
-                        <span className="truncate">{tour.name}</span>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          {tour.isPublic && (
-                            <span className="text-[9px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-900 flex items-center gap-0.5" title="Public sur Découvrir">
-                              <Globe className="w-2.5 h-2.5" /> PUB
-                            </span>
-                          )}
-                          <span className={`text-xs font-bold py-0.5 px-3 rounded-full border ${
-                            tour.status === "live" ? "bg-red-500 text-white border-red-700 animate-pulse" :
-                            tour.status === "completed" ? "bg-green-500 text-white border-green-700" :
-                            "bg-accent text-accent-foreground border-accent-foreground/10"
-                          }`}>
-                            {tour.status.toUpperCase()}
-                          </span>
-                        </div>
+                    <CardHeader className="pt-4 pb-3">
+                      <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
+                        {tour.name}
                       </CardTitle>
                       <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
                         <span className="text-primary font-bold">📅 {(() => {
@@ -194,23 +181,64 @@ export default function TourList() {
                         })()}</span>
                         <span className="text-muted-foreground/60">•</span>
                         <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
-                        {tour.status === "completed" && tour.averageScore && (
-                          <span className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-200 dark:border-yellow-900 ml-auto">
-                            ⭐ {tour.averageScore}/10
-                          </span>
-                        )}
                       </CardDescription>
                     </CardHeader>
                     
                     {/* Compact actions container */}
                     <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider">Actions rapides</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-black py-0.5 px-2 rounded-full border ${
+                          tour.status === "live" ? "bg-red-500 text-white border-red-700 animate-pulse" :
+                          tour.status === "completed" ? "bg-green-500 text-white border-green-700" :
+                          "bg-accent text-accent-foreground border-accent-foreground/10"
+                        }`}>
+                          {tour.status.toUpperCase()}
+                        </span>
+                        {tour.isPublic && (
+                          <span className="text-[9px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-900 flex items-center gap-0.5 animate-in zoom-in duration-300" title="Public sur Découvrir">
+                            <Globe className="w-2.5 h-2.5" /> PUB
+                          </span>
+                        )}
+                        {tour.status === "completed" && tour.averageScore && (
+                          <span className="flex items-center gap-0.5 bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-200 dark:border-yellow-900">
+                            ⭐ {tour.averageScore}
+                          </span>
+                        )}
+                      </div>
+                      
                       <div className="flex gap-2">
-                        <Link href={`/tour/${tour._id}`} title="Gérer le tour" onClick={(e) => e.stopPropagation()}>
+                        {/* Globe (Public toggle) */}
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className={`h-9 w-9 rounded-full border transition-all cursor-pointer ${
+                            tour.isPublic 
+                              ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                              : "border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary"
+                          }`}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                              await toggleTourPublic({ tourId: tour._id, isPublic: !tour.isPublic });
+                            } catch (err) {
+                              console.error("Error toggling public status:", err);
+                              alert("Erreur lors de la publication : " + (err as Error).message);
+                            }
+                          }}
+                          title={tour.isPublic ? "Retirer de Découvrir (Public)" : "Publier sur Découvrir (Public)"}
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                        </Button>
+
+                        {/* pencil link */}
+                        <Link href={tour.status === "completed" ? `/recap/${tour._id}` : `/tour/${tour._id}`} title={tour.status === "completed" ? "Voir le récap" : "Gérer le tour"} onClick={(e) => e.stopPropagation()}>
                           <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors cursor-pointer">
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         </Link>
+                        
+                        {/* Duplicate */}
                         <Button 
                           variant="outline" 
                           size="icon"
@@ -226,6 +254,8 @@ export default function TourList() {
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </Button>
+
+                        {/* Delete */}
                         <Button 
                           variant="destructive" 
                           size="icon"
