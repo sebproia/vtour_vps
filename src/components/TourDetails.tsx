@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check, Share2, ChevronLeft, ChevronRight, Navigation2 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUser } from "@clerk/nextjs";
@@ -382,18 +382,19 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                       <h3 className="text-2xl sm:text-3xl font-display font-black text-foreground drop-shadow-sm leading-tight">
                         {activePlace.name}
                       </h3>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm pt-0.5">
-                        <p className="text-muted-foreground flex items-center gap-1">
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <p className="text-muted-foreground text-sm flex items-center gap-1 truncate">
                           <MapPin className="text-primary w-4 h-4 flex-shrink-0" /> {activePlace.address}
                         </p>
                         {activePlace.coordinates && (
                           <button 
-                            className="text-xs font-bold text-primary hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                            className="w-8 h-8 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors flex-shrink-0 cursor-pointer"
                             onClick={() => {
                               window.open(`https://www.google.com/maps/dir/?api=1&destination=${activePlace.coordinates?.lat},${activePlace.coordinates?.lng}`, '_blank');
                             }}
+                            title="Itinéraire Maps"
                           >
-                            <Navigation className="w-3.5 h-3.5" /> Itinéraire Maps 🗺️
+                            <Navigation2 className="w-4 h-4 fill-primary" /> 
                           </button>
                         )}
                       </div>
@@ -405,9 +406,17 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                       )}
                     </div>
 
-                    {/* Tasting Card & Live feedback (Always visible in Deck!) */}
+                    {/* Tasting Card & Live feedback (Locked for future stops) */}
                     <div className="pt-4 border-t-2 border-border/50">
-                      <TastingCard key={activePlace._id} placeId={activePlace._id} guestName={adminName} />
+                      {isUpcoming ? (
+                        <div className="p-6 text-center bg-muted/30 rounded-2xl border-2 border-dashed border-border/60 text-muted-foreground animate-in fade-in duration-300">
+                          <span className="text-4xl block mb-2">🔒</span>
+                          <p className="font-display font-black text-sm">Arrêt non encore actif</p>
+                          <p className="text-xs font-medium mt-1">Lisez et lancez cet arrêt pour que le groupe puisse y participer et donner son avis !</p>
+                        </div>
+                      ) : (
+                        <TastingCard key={activePlace._id} placeId={activePlace._id} guestName={adminName} />
+                      )}
                     </div>
 
                     {/* Main action button at bottom of active card */}
@@ -418,22 +427,22 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                             onClick={async () => {
                               await nextStep({ tourId: tId });
                             }}
-                            className="w-full h-14 text-lg sm:text-xl font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_5px_0_hsl(190,80%,40%)] hover:shadow-[0_1px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all rounded-2xl flex items-center justify-center gap-2"
+                            className="w-full h-12 text-base font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_3px_0_hsl(190,80%,40%)] hover:shadow-[0_1px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all rounded-xl flex items-center justify-center gap-2"
                           >
-                            PASSER À L&apos;ARRÊT SUIVANT 🚀
+                            Arrêt suivant 🚀
                           </Button>
                         ) : (
                           <Button 
                             onClick={async () => {
                               await endLiveMode({ tourId: tId });
                             }}
-                            className="w-full h-14 text-lg sm:text-xl font-display font-black bg-green-600 hover:bg-green-700 text-white shadow-[0_5px_0_hsl(140,80%,30%)] hover:shadow-[0_1px_0_hsl(140,80%,30%)] hover:translate-y-1 transition-all rounded-2xl flex items-center justify-center gap-2"
+                            className="w-full h-12 text-base font-display font-black bg-green-600 hover:bg-green-700 text-white shadow-[0_3px_0_hsl(140,80%,30%)] hover:shadow-[0_1px_0_hsl(140,80%,30%)] hover:translate-y-0.5 transition-all rounded-xl flex items-center justify-center gap-2"
                           >
-                            🏆 TERMINER LE FOOD TOUR !
+                            Terminer le tour 🏆
                           </Button>
                         )
                       ) : isPassed ? (
-                        <div className="p-3.5 bg-green-500/10 border border-green-500/20 text-green-700 text-sm font-semibold text-center rounded-xl">
+                        <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-700 text-xs sm:text-sm font-semibold text-center rounded-xl">
                           ✅ Cet arrêt est terminé. Vos notes, commentaires et photos restent modifiables ci-dessus !
                         </div>
                       ) : (
@@ -442,9 +451,9 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                             // Activer cet arrêt directement en avançant l'index d'étape
                             await nextStep({ tourId: tId });
                           }}
-                          className="w-full h-14 text-lg sm:text-xl font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_5px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all rounded-2xl flex items-center justify-center gap-2"
+                          className="w-full h-12 text-base font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all rounded-xl flex items-center justify-center gap-2"
                         >
-                          ⚡ DÉMARRER CET ARRÊT MAINTENANT !
+                          Lancer l&apos;arrêt 🚀
                         </Button>
                       )}
                     </div>
