@@ -18,8 +18,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   const [isEditing, setIsEditing] = useState(false);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const touchStartAngle = useRef<number>(0);
-  const touchStartScore = useRef<number>(5.0);
+  const lastAngle = useRef<number>(0);
   const [isDragging, setIsDragging] = useState(false);
   const [shouldWiggle, setShouldWiggle] = useState(true);
 
@@ -143,8 +142,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
     const dx = e.clientX - centerX;
     const dy = e.clientY - centerY;
     
-    touchStartAngle.current = Math.atan2(dy, dx);
-    touchStartScore.current = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
+    lastAngle.current = Math.atan2(dy, dx);
     setIsDragging(true);
   };
 
@@ -161,14 +159,17 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
     const dy = e.clientY - centerY;
     
     const currentAngle = Math.atan2(dy, dx);
-    let diff = currentAngle - touchStartAngle.current;
+    let diff = currentAngle - lastAngle.current;
     
     if (diff > Math.PI) diff -= 2 * Math.PI;
     if (diff < -Math.PI) diff += 2 * Math.PI;
     
     const deltaScore = (diff / (2 * Math.PI)) * 9;
-    const newScore = Math.max(1, Math.min(10, touchStartScore.current + deltaScore));
-    setSelectedScore(Number(newScore.toFixed(1)));
+    const currentScore = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
+    const newScore = Math.max(1, Math.min(10, currentScore + deltaScore));
+    
+    setSelectedScore(newScore);
+    lastAngle.current = currentAngle;
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -182,7 +183,8 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   const getAvatarSrc = (score: number) => {
     if (score < 3.5) return "/grade-disgusted.png";
     if (score < 5.5) return "/grade-skeptical.png";
-    if (score < 8.0) return "/grade-happy.png";
+    if (score < 7.5) return "/grade-smiling.png";
+    if (score < 9.0) return "/grade-happy.png";
     return "/grade-laughing.png";
   };
 
@@ -259,7 +261,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               <img 
                 src={getAvatarSrc(scoreVal)} 
                 alt="Avatar note" 
-                className="w-[125px] h-[125px] max-w-none object-contain select-none pointer-events-none z-10 -translate-y-1"
+                className="w-[145px] h-[145px] max-w-none object-contain select-none pointer-events-none z-10 translate-y-2"
               />
             </div>
           </div>

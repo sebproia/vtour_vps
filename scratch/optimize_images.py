@@ -8,6 +8,7 @@ images_to_optimize = {
     "donut-dial.png": 300,
     "grade-disgusted.png": 200,
     "grade-skeptical.png": 200,
+    "grade-smiling.png": 200,
     "grade-happy.png": 200,
     "grade-laughing.png": 200
 }
