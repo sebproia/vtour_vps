@@ -8,6 +8,7 @@ export default defineSchema({
     currentStepIndex: v.number(),
     organizerId: v.string(), // Clerk user ID
     date: v.optional(v.string()),
+    isPublic: v.optional(v.boolean()),
   }),
   
   places: defineTable({

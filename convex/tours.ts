@@ -186,6 +186,107 @@ export const duplicateTour = mutation({
         order: place.order,
         coordinates: place.coordinates,
         adminComment: place.adminComment,
+        openingHours: place.openingHours,
+        googlePlaceId: place.googlePlaceId,
+        description: place.description,
+      });
+    }
+
+    return newTourId;
+  }
+});
+
+export const toggleTourPublic = mutation({
+  args: { tourId: v.id("tours"), isPublic: v.boolean(), organizerId: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const organizerId = identity ? identity.subject : args.organizerId;
+    if (!organizerId) throw new Error("Unauthenticated");
+
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour) throw new Error("Tour not found");
+    if (tour.organizerId !== organizerId) throw new Error("Unauthorized");
+
+    await ctx.db.patch(args.tourId, { isPublic: args.isPublic });
+  }
+});
+
+export const getPublicTours = query({
+  args: {},
+  handler: async (ctx) => {
+    const tours = await ctx.db
+      .query("tours")
+      .filter((q) => q.eq(q.field("isPublic"), true))
+      .order("desc")
+      .collect();
+    
+    return Promise.all(tours.map(async (tour) => {
+      const places = await ctx.db
+        .query("places")
+        .withIndex("by_tour", (q) => q.eq("tourId", tour._id))
+        .collect();
+
+      let averageScore = null;
+      if (tour.status === "completed") {
+        let sum = 0;
+        let count = 0;
+        await Promise.all(places.map(async (place) => {
+          const ratings = await ctx.db
+            .query("ratings")
+            .withIndex("by_place", (q) => q.eq("placeId", place._id))
+            .collect();
+          for (const r of ratings) {
+            if (r.score !== undefined && r.score !== null) {
+              sum += r.score;
+              count++;
+            }
+          }
+        }));
+        if (count > 0) averageScore = Number((sum / count).toFixed(1));
+      }
+
+      return { ...tour, stopsCount: places.length, averageScore };
+    }));
+  },
+});
+
+export const importPublicTour = mutation({
+  args: { tourId: v.id("tours"), organizerId: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const organizerId = identity ? identity.subject : args.organizerId;
+    if (!organizerId) throw new Error("Unauthenticated");
+
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour) throw new Error("Tour not found");
+    if (!tour.isPublic) throw new Error("This tour is private");
+
+    const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+    const newTourId = await ctx.db.insert("tours", {
+      name: `${tour.name} (Importé ${today})`,
+      organizerId: organizerId,
+      status: "draft",
+      currentStepIndex: 0,
+      isPublic: false,
+      date: tour.date,
+    });
+
+    const places = await ctx.db
+      .query("places")
+      .withIndex("by_tour", (q) => q.eq("tourId", args.tourId))
+      .collect();
+
+    for (const place of places) {
+      await ctx.db.insert("places", {
+        tourId: newTourId,
+        name: place.name,
+        address: place.address,
+        order: place.order,
+        coordinates: place.coordinates,
+        adminComment: place.adminComment,
+        openingHours: place.openingHours,
+        googlePlaceId: place.googlePlaceId,
+        description: place.description,
       });
     }
 

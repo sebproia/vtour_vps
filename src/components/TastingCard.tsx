@@ -122,7 +122,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   return (
     <div className="space-y-4 pt-2">
       <h3 className="text-lg font-display font-black text-center text-foreground">
-        {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "Notez les plats 🍔"}
+        {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "C'était bon ? 😋"}
       </h3>
       
       <div className="flex flex-col gap-2 w-full max-w-sm mx-auto">
