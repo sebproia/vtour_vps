@@ -24,7 +24,10 @@ export const addPlace = mutation({
         lng: v.number()
       })
     ),
-    adminComment: v.optional(v.string())
+    adminComment: v.optional(v.string()),
+    openingHours: v.optional(v.string()),
+    googlePlaceId: v.optional(v.string()),
+    insertAtIndex: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -38,6 +41,18 @@ export const addPlace = mutation({
       .withIndex("by_tour", (q) => q.eq("tourId", args.tourId))
       .collect();
     
+    // Sort existing places by order
+    existingPlaces.sort((a, b) => a.order - b.order);
+
+    const targetIndex = args.insertAtIndex !== undefined ? args.insertAtIndex : existingPlaces.length;
+
+    // Shift all places at or after targetIndex
+    for (const place of existingPlaces) {
+      if (place.order >= targetIndex) {
+        await ctx.db.patch(place._id, { order: place.order + 1 });
+      }
+    }
+    
     return await ctx.db.insert("places", {
       tourId: args.tourId,
       name: args.name,
@@ -45,7 +60,9 @@ export const addPlace = mutation({
       description: args.description,
       coordinates: args.coordinates,
       adminComment: args.adminComment,
-      order: existingPlaces.length, // Put it at the end
+      openingHours: args.openingHours,
+      googlePlaceId: args.googlePlaceId,
+      order: targetIndex,
     });
   },
 });

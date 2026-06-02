@@ -22,6 +22,8 @@ export default defineSchema({
       })
     ),
     adminComment: v.optional(v.string()),
+    openingHours: v.optional(v.string()),
+    googlePlaceId: v.optional(v.string()),
   }).index("by_tour", ["tourId"]),
 
   ratings: defineTable({

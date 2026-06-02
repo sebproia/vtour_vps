@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 const libraries: "places"[] = ["places"];
 
 interface MapPickerProps {
-  onLocationSelect: (name: string, address: string, lat: number, lng: number) => void;
+  onLocationSelect: (name: string, address: string, lat: number, lng: number, openingHours?: string, googlePlaceId?: string) => void;
   initialLocation?: { lat: number; lng: number };
 }
 
@@ -36,9 +36,20 @@ export default function MapPicker({ onLocationSelect, initialLocation }: MapPick
         const address = place.formatted_address || "Unknown address";
         const name = place.name || address.split(',')[0];
         
+        let openingHoursToday = "";
+        if (place.opening_hours && place.opening_hours.weekday_text) {
+          const todayIndex = new Date().getDay();
+          const weekdayTextIdx = todayIndex === 0 ? 6 : todayIndex - 1;
+          const fullText = place.opening_hours.weekday_text[weekdayTextIdx];
+          if (fullText) {
+            const parts = fullText.split(": ");
+            openingHoursToday = parts[1] || fullText;
+          }
+        }
+        
         setMapCenter({ lat, lng });
         setMarkerPos({ lat, lng });
-        onLocationSelect(name, address, lat, lng);
+        onLocationSelect(name, address, lat, lng, openingHoursToday || undefined, place.place_id || undefined);
       }
     }
   };

@@ -12,6 +12,9 @@ import QRCode from "react-qr-code";
 import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check, Share2, ChevronLeft, ChevronRight, Navigation2 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useLoadScript } from "@react-google-maps/api";
+
+const libraries: "places"[] = ["places"];
 import { useUser } from "@clerk/nextjs";
 import TastingCard from "@/components/TastingCard";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -51,6 +54,84 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const [copied, setCopied] = useState(false);
   const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null);
   const [viewIndex, setViewIndex] = useState<number>(0);
+
+  const [newOpeningHours, setNewOpeningHours] = useState("");
+  const [newGooglePlaceId, setNewGooglePlaceId] = useState("");
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [travelTimes, setTravelTimes] = useState<Record<string, string>>({});
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
+
+  useEffect(() => {
+    if (!isLoaded || !places || places.length < 2) {
+      setTravelTimes({});
+      return;
+    }
+
+    try {
+      const service = new google.maps.DistanceMatrixService();
+      
+      const origins = places.slice(0, -1).map(p => {
+        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
+        return p.address;
+      });
+      
+      const destinations = places.slice(1).map(p => {
+        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
+        return p.address;
+      });
+
+      service.getDistanceMatrix({
+        origins,
+        destinations,
+        travelMode: google.maps.TravelMode.WALKING,
+      }, (response, status) => {
+        if (status === "OK" && response) {
+          const times: Record<string, string> = {};
+          for (let i = 0; i < origins.length; i++) {
+            const element = response.rows[i]?.elements[i];
+            if (element && element.status === "OK") {
+              times[places[i]._id] = element.duration.text;
+            }
+          }
+          setTravelTimes(times);
+        }
+      });
+    } catch (err) {
+      console.error("Error calculating travel times:", err);
+    }
+  }, [isLoaded, places]);
+
+  const getFullItineraryUrl = () => {
+    if (!places || places.length === 0) return "";
+    if (places.length === 1) {
+      const p = places[0];
+      const dest = p.coordinates ? `${p.coordinates.lat},${p.coordinates.lng}` : encodeURIComponent(p.address);
+      return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=walking`;
+    }
+    
+    const firstPlace = places[0];
+    const lastPlace = places[places.length - 1];
+    if (!firstPlace || !lastPlace) return "";
+    
+    const origin = firstPlace.coordinates 
+      ? `${firstPlace.coordinates.lat},${firstPlace.coordinates.lng}` 
+      : encodeURIComponent(firstPlace.address);
+      
+    const destination = lastPlace.coordinates 
+      ? `${lastPlace.coordinates.lat},${lastPlace.coordinates.lng}` 
+      : encodeURIComponent(lastPlace.address);
+      
+    const waypoints = places.slice(1, -1).map(p => {
+      return p.coordinates ? `${p.coordinates.lat},${p.coordinates.lng}` : encodeURIComponent(p.address);
+    }).join("|");
+    
+    return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? `&waypoints=${waypoints}` : ""}&travelmode=walking`;
+  };
 
   // Synchroniser viewIndex avec le currentStepIndex du serveur
   useEffect(() => {
@@ -116,18 +197,34 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   };
 
   const handleAddPlace = async () => {
-    if (!newName.trim() || !newAddress.trim()) return;
+    if (!tour || !newName.trim() || !newAddress.trim()) return;
+    
+    let finalInsertIndex: number | undefined = undefined;
+    if (insertIndex !== null) {
+      finalInsertIndex = insertIndex;
+    } else if (tour.status === "live") {
+      finalInsertIndex = tour.currentStepIndex + 1;
+    }
+
     await addPlace({
       tourId: tId,
       name: newName,
       address: newAddress,
       coordinates: newCoordinate,
-      adminComment: newAdminComment.trim() || undefined
+      adminComment: newAdminComment.trim() || undefined,
+      openingHours: newOpeningHours || undefined,
+      googlePlaceId: newGooglePlaceId || undefined,
+      insertAtIndex: finalInsertIndex,
     });
+    
     setNewName("");
     setNewAddress("");
     setNewAdminComment("");
     setNewCoordinate(undefined);
+    setNewOpeningHours("");
+    setNewGooglePlaceId("");
+    setInsertIndex(null);
+    setIsAddModalOpen(false);
     setMapPickerKey(k => k + 1);
   };
 
@@ -255,14 +352,25 @@ export default function TourDetails({ tourId }: { tourId: string }) {
         // ------------------ RUN DECK VIEW ------------------
         <div className="w-full max-w-xl mx-auto space-y-6 pb-24 animate-in fade-in duration-500">
           {/* Header Controls inside deck */}
-          <div className="flex justify-between items-center bg-card p-4 rounded-2xl border-2 border-border shadow-md">
-            <span className="text-lg font-display font-black text-primary">
-              📍 RUN MODE
-            </span>
+          <div className="flex flex-wrap gap-2 justify-between items-center bg-card p-4 rounded-2xl border-2 border-border shadow-md">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-display font-black text-primary">
+                📍 RUN MODE
+              </span>
+              {places.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => window.open(getFullItineraryUrl(), '_blank')}
+                  className="h-8 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all text-xs font-display font-black flex items-center gap-1 cursor-pointer"
+                >
+                  <Navigation className="w-3.5 h-3.5" /> Route Complète 🗺️
+                </Button>
+              )}
+            </div>
             <Button 
               size="sm" 
               onClick={() => pauseTour({ tourId: tId })} 
-              className="h-9 px-3 text-sm rounded-xl bg-amber-500 text-white hover:bg-amber-600 font-display font-black shadow-[0_3px_0_hsl(45,90%,35%)] hover:translate-y-0.5 transition-all"
+              className="h-9 px-3 text-sm rounded-xl bg-amber-500 text-white hover:bg-amber-600 font-display font-black shadow-[0_3px_0_hsl(45,90%,35%)] hover:translate-y-0.5 transition-all cursor-pointer"
             >
               <Pause className="mr-1 w-3.5 h-3.5" /> PAUSE / DRAFT
             </Button>
@@ -383,9 +491,16 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                         {activePlace.name}
                       </h3>
                       <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <p className="text-muted-foreground text-sm flex items-center gap-1 truncate">
-                          <MapPin className="text-primary w-4 h-4 flex-shrink-0" /> {activePlace.address}
-                        </p>
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <p className="text-muted-foreground text-sm flex items-center gap-1 truncate">
+                            <MapPin className="text-primary w-4 h-4 flex-shrink-0" /> {activePlace.address}
+                          </p>
+                          {activePlace.openingHours && (
+                            <p className="text-[11px] font-bold text-amber-600 flex items-center gap-1 pl-5">
+                              🕒 Horaires aujourd&apos;hui : {activePlace.openingHours}
+                            </p>
+                          )}
+                        </div>
                         {activePlace.coordinates && (
                           <button 
                             className="w-8 h-8 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors flex-shrink-0 cursor-pointer"
@@ -474,17 +589,26 @@ export default function TourDetails({ tourId }: { tourId: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column: Places List */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-xl sm:text-2xl font-display font-black text-foreground flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-xl sm:text-2xl font-display font-black text-foreground flex items-center gap-2 mr-2">
                 <MapPin className="text-primary w-5 h-5 sm:w-6 sm:h-6" /> Route
               </h3>
+              {places.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => window.open(getFullItineraryUrl(), '_blank')}
+                  className="h-8 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all text-xs font-display font-black flex items-center gap-1 cursor-pointer"
+                >
+                  <Navigation className="w-3.5 h-3.5" /> Itinéraire Complet 🗺️
+                </Button>
+              )}
               {isDraft && places.length > 2 && (
                 <Button 
                   size="sm" 
                   onClick={handleOptimize} 
                   disabled={isOptimizing} 
                   title="Optimiser le parcours" 
-                  className="h-8 w-8 rounded-lg bg-amber-500 text-white hover:bg-amber-600 shadow-[0_2px_0_hsl(45,90%,35%)] hover:translate-y-0.5 transition-all flex items-center justify-center"
+                  className="h-8 w-8 rounded-lg bg-amber-500 text-white hover:bg-amber-600 shadow-[0_2px_0_hsl(45,90%,35%)] hover:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer"
                 >
                   {isOptimizing ? <Loader2 className="animate-spin w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                 </Button>
@@ -506,86 +630,118 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                         const isExpanded = expandedPlaceId === place._id || isCurrentStep;
                         
                         return (
-                          <Draggable 
-                            key={place._id} 
-                            draggableId={place._id} 
-                            index={index}
-                            isDragDisabled={!isDraft}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                style={{ ...provided.draggableProps.style }}
-                              >
-                                <Card 
-                                  className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${
-                                    isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg z-10" : 
-                                    isPassed ? "border-muted bg-muted/20 opacity-70 cursor-pointer hover:opacity-100 hover:border-secondary/50" :
-                                    "border-border bg-card cursor-pointer hover:border-secondary/50"
-                                  } ${snapshot.isDragging ? "shadow-2xl ring-2 ring-primary z-50" : ""} ${isDraft ? "cursor-grab active:cursor-grabbing" : ""}`}
-                                  {...(isDraft ? provided.dragHandleProps : {})}
-                                  onClick={() => {
-                                    if (!isDraft) {
-                                      setExpandedPlaceId(expandedPlaceId === place._id ? null : place._id);
-                                    }
-                                  }}
+                          <div key={place._id}>
+                            <Draggable 
+                              draggableId={place._id} 
+                              index={index}
+                              isDragDisabled={!isDraft}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  style={{ ...provided.draggableProps.style }}
                                 >
-                                  <div className="flex p-3 sm:p-4 gap-3 items-start">
-                                    <div className={`w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center rounded-full border-2 font-display font-black text-base sm:text-lg ${
-                                      isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" : 
-                                      isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" : 
-                                      "bg-background text-foreground border-border"
-                                    }`}>
-                                      {place.order + 1}
-                                    </div>
-                                    <div className="flex-grow min-w-0">
-                                      <h4 className={`text-base sm:text-lg font-bold font-display truncate ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                                        {place.name}
-                                      </h4>
-                                      {place.adminComment && (
-                                        <p className="text-primary font-medium text-sm mt-0.5 truncate">💡 {place.adminComment}</p>
-                                      )}
-                                      <p className="text-muted-foreground text-sm flex items-center gap-1 mt-0.5 truncate">
-                                        <Navigation className="w-3 h-3 flex-shrink-0" /> {place.address}
-                                      </p>
-                                      {tour.status !== "completed" && place.coordinates && (
-                                        <Button 
-                                          variant="outline" 
-                                          size="sm" 
-                                          className="mt-2 rounded-lg border text-xs h-7 font-bold flex items-center gap-1"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank');
-                                          }}
+                                  <Card 
+                                    className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${
+                                      isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg z-10" : 
+                                      isPassed ? "border-muted bg-muted/20 opacity-70 cursor-pointer hover:opacity-100 hover:border-secondary/50" :
+                                      "border-border bg-card cursor-pointer hover:border-secondary/50"
+                                    } ${snapshot.isDragging ? "shadow-2xl ring-2 ring-primary z-50" : ""} ${isDraft ? "cursor-grab active:cursor-grabbing" : ""}`}
+                                    {...(isDraft ? provided.dragHandleProps : {})}
+                                    onClick={() => {
+                                      if (!isDraft) {
+                                        setExpandedPlaceId(expandedPlaceId === place._id ? null : place._id);
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex p-3 sm:p-4 gap-3 items-start">
+                                      <div className={`w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center rounded-full border-2 font-display font-black text-base sm:text-lg ${
+                                        isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" : 
+                                        isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" : 
+                                        "bg-background text-foreground border-border"
+                                      }`}>
+                                        {place.order + 1}
+                                      </div>
+                                      <div className="flex-grow min-w-0">
+                                        <h4 className={`text-base sm:text-lg font-bold font-display truncate ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                                          {place.name}
+                                        </h4>
+                                        {place.adminComment && (
+                                          <p className="text-primary font-medium text-sm mt-0.5 truncate">💡 {place.adminComment}</p>
+                                        )}
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                                          <p className="text-muted-foreground text-sm flex items-center gap-1 truncate">
+                                            <Navigation className="w-3 h-3 flex-shrink-0" /> {place.address}
+                                          </p>
+                                          {place.openingHours && (
+                                            <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-0.5 select-none">
+                                              🕒 {place.openingHours}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {tour.status !== "completed" && place.coordinates && (
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            className="mt-2 rounded-lg border text-xs h-7 font-bold flex items-center gap-1 cursor-pointer"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank');
+                                            }}
+                                          >
+                                            <Navigation className="w-3 h-3" /> Itinéraire
+                                          </Button>
+                                        )}
+                                      </div>
+                                      {isPassed && <CheckCircle className="w-5 h-5 text-green-500 absolute top-3 right-3 flex-shrink-0" />}
+                                      {isDraft && (
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); deletePlace({ placeId: place._id }); }}
+                                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all"
+                                          title="Supprimer ce stop"
                                         >
-                                          <Navigation className="w-3 h-3" /> Itinéraire
-                                        </Button>
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
                                       )}
                                     </div>
-                                    {isPassed && <CheckCircle className="w-5 h-5 text-green-500 absolute top-3 right-3 flex-shrink-0" />}
-                                    {isDraft && (
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); deletePlace({ placeId: place._id }); }}
-                                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all"
-                                        title="Supprimer ce stop"
+                                    {isExpanded && (
+                                      <div 
+                                        className="px-3 pb-3 sm:px-4 sm:pb-4 border-t-2 border-secondary/20 pt-4 bg-secondary/5"
+                                        onClick={(e) => e.stopPropagation()}
                                       >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
+                                        <TastingCard key={place._id} placeId={place._id} guestName={adminName} />
+                                      </div>
                                     )}
-                                  </div>
-                                  {isExpanded && (
-                                    <div 
-                                      className="px-3 pb-3 sm:px-4 sm:pb-4 border-t-2 border-secondary/20 pt-4 bg-secondary/5"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <TastingCard key={place._id} placeId={place._id} guestName={adminName} />
-                                    </div>
-                                  )}
-                                </Card>
+                                  </Card>
+                                </div>
+                              )}
+                            </Draggable>
+
+                            {/* Walking transit connector and Inline insertion divider */}
+                            {index < places.length - 1 && (
+                              <div className="flex items-center gap-2 pl-7 py-1 text-xs font-bold text-muted-foreground animate-in fade-in duration-300 animate-out fade-out select-none">
+                                <div className="w-0.5 h-6 bg-dashed border-l-2 border-dashed border-border/80"></div>
+                                {travelTimes[place._id] && (
+                                  <span className="flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded-full border border-border/40 select-none">
+                                    🚶 {travelTimes[place._id]} de marche
+                                  </span>
+                                )}
+                                {isDraft && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setInsertIndex(index + 1);
+                                      setIsAddModalOpen(true);
+                                    }}
+                                    className="h-6 px-2.5 text-[10px] font-display font-black rounded-full bg-card hover:bg-primary hover:text-primary-foreground border border-border shadow-sm hover:-translate-y-0.5 transition-all flex items-center gap-0.5 cursor-pointer ml-auto mr-4"
+                                  >
+                                    <PlusCircle className="w-3.5 h-3.5" /> Insérer un arrêt ici
+                                  </Button>
+                                )}
                               </div>
                             )}
-                          </Draggable>
+                          </div>
                         );
                       })}
                       {provided.placeholder}
@@ -626,10 +782,12 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   {tour.status !== "completed" ? (
                     <MapPicker 
                       key={mapPickerKey}
-                      onLocationSelect={(nameFromMap, addr, lat, lng) => {
+                      onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId) => {
                         setNewName(nameFromMap);
                         setNewAddress(addr);
                         setNewCoordinate({ lat, lng });
+                        setNewOpeningHours(openingHours || "");
+                        setNewGooglePlaceId(googlePlaceId || "");
                       }} 
                     />
                   ) : (
@@ -643,6 +801,11 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                         <MapPin className="text-primary flex-shrink-0 w-4 h-4" />
                         <span className="text-xs font-medium truncate">{newAddress}</span>
                       </div>
+                      {newOpeningHours && (
+                        <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 flex gap-2 items-center">
+                          <span className="text-xs font-bold text-amber-600">🕒 {newOpeningHours}</span>
+                        </div>
+                      )}
                       <div className="space-y-1.5">
                         <label className="text-sm font-bold font-display">Plat recommandé (Optionnel)</label>
                         <Input 
@@ -658,7 +821,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                 </div>
                 <Button 
                   onClick={handleAddPlace} 
-                  className="w-full h-10 text-base rounded-lg font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all"
+                  className="w-full h-10 text-base rounded-lg font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all cursor-pointer"
                   disabled={tour.status === "completed" || !newName.trim() || !newAddress.trim()}
                 >
                   ADD TO TOUR
@@ -669,6 +832,99 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           </div>
         </div>
       )}
+
+      {/* Dialog for inline stop insertion */}
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
+        setIsAddModalOpen(open);
+        if (!open) {
+          setInsertIndex(null);
+          setNewName("");
+          setNewAddress("");
+          setNewAdminComment("");
+          setNewCoordinate(undefined);
+          setNewOpeningHours("");
+          setNewGooglePlaceId("");
+        }
+      }}>
+        <DialogContent className="w-[95vw] sm:max-w-md mx-auto border-4 border-primary/20 rounded-[2rem] bg-card p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-display font-black text-center text-primary">
+              Insérer un arrêt à la position {insertIndex || 1} 📍
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold font-display">Nom du restaurant</label>
+              <Input 
+                placeholder="Ex: Joe's Pizza" 
+                className="h-10 text-sm rounded-lg border-2"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-3">
+              <label className="text-sm font-bold font-display">Localiser l&apos;adresse</label>
+              {isLoaded ? (
+                <MapPicker 
+                  key={`inline-picker-${insertIndex}`}
+                  onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId) => {
+                    setNewName(nameFromMap);
+                    setNewAddress(addr);
+                    setNewCoordinate({ lat, lng });
+                    setNewOpeningHours(openingHours || "");
+                    setNewGooglePlaceId(googlePlaceId || "");
+                  }} 
+                />
+              ) : (
+                <div className="h-[150px] w-full bg-muted rounded-lg flex items-center justify-center font-medium opacity-50 border text-sm">
+                  Loading Map...
+                </div>
+              )}
+              {newAddress && (
+                <div className="space-y-3">
+                  <div className="p-2.5 bg-primary/10 rounded-lg border border-primary/20 flex gap-2 items-center">
+                    <MapPin className="text-primary flex-shrink-0 w-4 h-4" />
+                    <span className="text-xs font-medium truncate">{newAddress}</span>
+                  </div>
+                  {newOpeningHours && (
+                    <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 flex gap-2 items-center">
+                      <span className="text-xs font-bold text-amber-600 font-display">🕒 {newOpeningHours}</span>
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold font-display">Plat recommandé (Optionnel)</label>
+                    <Input 
+                      placeholder="Ex: Prenez le menu signature !" 
+                      className="h-10 text-sm rounded-lg border-2"
+                      value={newAdminComment}
+                      onChange={(e) => setNewAdminComment(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                className="flex-grow rounded-xl h-11 border-2 font-display font-black cursor-pointer text-foreground"
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setInsertIndex(null);
+                }}
+              >
+                ANNULER
+              </Button>
+              <Button 
+                onClick={handleAddPlace} 
+                className="flex-grow h-11 rounded-xl font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all cursor-pointer"
+                disabled={!newName.trim() || !newAddress.trim()}
+              >
+                INSÉRER STOP
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -58,12 +58,12 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
         <div className="mt-6 pt-4 border-t-2 border-dashed border-border/80 text-left space-y-3">
           <h4 className="font-display font-black text-lg text-primary">Group Vibe 🍔</h4>
           <div className="grid grid-cols-1 gap-2">
-            {ratings.map(r => (
+            {ratings.filter(r => r.score !== undefined && r.score !== null).map(r => (
               <div key={r._id} className="flex flex-col gap-1 bg-muted/60 px-4 py-2.5 rounded-xl border border-border/60">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-foreground">{r.guestName}</span>
                   <span className="font-black text-primary bg-primary/10 px-2.5 py-0.5 rounded-lg text-xs border border-primary/20 flex-shrink-0">
-                    {r.score !== undefined && r.score !== null ? `${r.score}/10` : "⏭️ Passe"}
+                    {r.score}/10
                   </span>
                 </div>
                 {r.comment && (
