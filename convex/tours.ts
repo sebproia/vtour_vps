@@ -38,7 +38,21 @@ export const getMyTours = query({
         if (count > 0) averageScore = Number((sum / count).toFixed(1));
       }
 
-      return { ...tour, stopsCount: places.length, averageScore };
+      let previewPhotos: string[] = [];
+      for (const place of places) {
+        const photos = await ctx.db
+          .query("photos")
+          .withIndex("by_place", (q) => q.eq("placeId", place._id))
+          .collect();
+        for (const photo of photos) {
+          const url = await ctx.storage.getUrl(photo.storageId);
+          if (url) previewPhotos.push(url);
+          if (previewPhotos.length >= 3) break;
+        }
+        if (previewPhotos.length >= 3) break;
+      }
+
+      return { ...tour, stopsCount: places.length, averageScore, previewPhotos };
     }));
   },
 });
@@ -245,7 +259,21 @@ export const getPublicTours = query({
         if (count > 0) averageScore = Number((sum / count).toFixed(1));
       }
 
-      return { ...tour, stopsCount: places.length, averageScore };
+      let previewPhotos: string[] = [];
+      for (const place of places) {
+        const photos = await ctx.db
+          .query("photos")
+          .withIndex("by_place", (q) => q.eq("placeId", place._id))
+          .collect();
+        for (const photo of photos) {
+          const url = await ctx.storage.getUrl(photo.storageId);
+          if (url) previewPhotos.push(url);
+          if (previewPhotos.length >= 3) break;
+        }
+        if (previewPhotos.length >= 3) break;
+      }
+
+      return { ...tour, stopsCount: places.length, averageScore, previewPhotos };
     }));
   },
 });

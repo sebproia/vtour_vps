@@ -2,17 +2,32 @@
 
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Copy, Download, Globe } from "lucide-react";
+import { Trash2, Copy, Download, Globe, Pencil } from "lucide-react";
+
+interface TourWithPhotos {
+  _id: Id<"tours">;
+  _creationTime: number;
+  name: string;
+  organizerId: string;
+  status: "draft" | "live" | "completed";
+  currentStepIndex: number;
+  date?: string;
+  isPublic?: boolean;
+  stopsCount: number;
+  averageScore: number | null;
+  previewPhotos: string[];
+}
 
 export default function TourList() {
   const { isLoading, isAuthenticated } = useConvexAuth();
-  const tours = useQuery(api.tours.getMyTours, isAuthenticated ? {} : "skip");
-  const publicTours = useQuery(api.tours.getPublicTours, isAuthenticated ? {} : "skip");
+  const tours = useQuery(api.tours.getMyTours, isAuthenticated ? {} : "skip") as TourWithPhotos[] | undefined;
+  const publicTours = useQuery(api.tours.getPublicTours, isAuthenticated ? {} : "skip") as TourWithPhotos[] | undefined;
   
   const createTour = useMutation(api.tours.createTour);
   const deleteTour = useMutation(api.tours.deleteTour);
@@ -53,7 +68,7 @@ export default function TourList() {
   }
 
   return (
-    <div className="space-y-8 mt-12">
+    <div className="space-y-6 mt-6">
       {/* Dynamic diner-style tabs */}
       <div className="flex gap-2 p-1.5 bg-card/60 backdrop-blur-sm rounded-2xl border-2 border-border shadow-inner max-w-sm sm:max-w-md select-none">
         <button
@@ -74,12 +89,12 @@ export default function TourList() {
               : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
           }`}
         >
-          🌐 Marketplace
+          🌐 Découvrir
         </button>
       </div>
 
       {activeTab === "my-tours" ? (
-        <div className="space-y-8 animate-in fade-in duration-300">
+        <div className="space-y-6 animate-in fade-in duration-300">
           {/* Create New Tour UI */}
           {isCreating ? (
             <Card className="border-4 border-secondary/50 rounded-[2rem] bg-secondary/10 shadow-lg">
@@ -127,89 +142,110 @@ export default function TourList() {
           )}
 
           {/* Tours Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tours.map((tour) => (
-              <Card key={tour._id} className="border-4 border-primary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-2 hover:border-primary/40 bg-card group cursor-pointer">
-                <CardHeader className="bg-primary/5 pb-6 border-b-4 border-transparent group-hover:border-primary/10 transition-colors">
-                  <CardTitle className="text-2xl font-bold flex items-center justify-between font-display gap-2">
-                    <span className="truncate">{tour.name}</span>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {tour.isPublic && (
-                        <span className="text-[10px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-900 flex items-center gap-0.5" title="Public sur la Marketplace">
-                          <Globe className="w-2.5 h-2.5" /> PUB
-                        </span>
-                      )}
-                      <span className={`text-sm font-bold py-1 px-4 rounded-full border-2 ${
-                        tour.status === "live" ? "bg-red-500 text-white border-red-700 animate-pulse" :
-                        tour.status === "completed" ? "bg-green-500 text-white border-green-700" :
-                        "bg-accent text-accent-foreground border-accent-foreground/10"
-                      }`}>
-                        {tour.status.toUpperCase()}
-                      </span>
-                    </div>
-                  </CardTitle>
-                  <CardDescription className="text-sm font-medium flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
-                    <span className="text-primary font-bold">📅 {(() => {
-                      const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
-                      try {
-                        const d = new Date(dateStr);
-                        return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-                      } catch {
-                        return dateStr;
-                      }
-                    })()}</span>
-                    <span className="text-muted-foreground/60">•</span>
-                    <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""} planned</span>
-                    {tour.status === "completed" && tour.averageScore && (
-                      <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold border border-yellow-200 ml-auto">
-                        ⭐ {tour.averageScore}/10
-                      </span>
+              <div key={tour._id} className="relative group">
+                <Link href={`/tour/${tour._id}`} className="block">
+                  <Card className="border-2 sm:border-4 border-primary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1.5 hover:border-primary/40 bg-card">
+                    {/* Visual Preview Photos */}
+                    {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
+                      <div className="flex gap-1.5 px-4 pt-4 select-none">
+                        {tour.previewPhotos.map((url, i) => (
+                          <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
+                            <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 pt-4 select-none">
+                        <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
+                          🍩 Pas encore de photos de dégustation
+                        </div>
+                      </div>
                     )}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-3">
-                  {tour.status === "completed" && (
-                    <Link href={`/recap/${tour._id}`} className="block w-full">
-                      <Button className="w-full text-lg h-12 font-bold font-display border-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:shadow-[0_2px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all">
-                        View Recap 📸
-                      </Button>
-                    </Link>
-                  )}
-                  <div className="flex gap-2">
-                    <Link href={`/tour/${tour._id}`} className="block flex-1">
-                      <Button variant="outline" className="w-full text-lg h-12 font-bold font-display border-2 rounded-xl border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors">
-                        Manage Tour
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="outline" 
-                      className="h-12 w-12 rounded-xl border-2 hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors"
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        if (confirm("Dupliquer ce tour ? (Les notes et photos ne seront pas copiées)")) {
-                          await duplicateTour({ tourId: tour._id });
-                        }
-                      }}
-                      title="Dupliquer le tour"
-                    >
-                      <Copy className="w-5 h-5" />
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      className="h-12 w-12 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 border-2 border-transparent hover:border-red-300 transition-colors"
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        if (confirm("Are you sure you want to delete this tour and all its memories?")) {
-                          await deleteTour({ tourId: tour._id });
-                        }
-                      }}
-                      title="Supprimer le tour"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+
+                    <CardHeader className="pt-4 pb-4">
+                      <CardTitle className="text-xl sm:text-2xl font-bold flex items-center justify-between font-display gap-2">
+                        <span className="truncate">{tour.name}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {tour.isPublic && (
+                            <span className="text-[9px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-900 flex items-center gap-0.5" title="Public sur Découvrir">
+                              <Globe className="w-2.5 h-2.5" /> PUB
+                            </span>
+                          )}
+                          <span className={`text-xs font-bold py-0.5 px-3 rounded-full border ${
+                            tour.status === "live" ? "bg-red-500 text-white border-red-700 animate-pulse" :
+                            tour.status === "completed" ? "bg-green-500 text-white border-green-700" :
+                            "bg-accent text-accent-foreground border-accent-foreground/10"
+                          }`}>
+                            {tour.status.toUpperCase()}
+                          </span>
+                        </div>
+                      </CardTitle>
+                      <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
+                        <span className="text-primary font-bold">📅 {(() => {
+                          const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
+                          try {
+                            const d = new Date(dateStr);
+                            return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+                          } catch {
+                            return dateStr;
+                          }
+                        })()}</span>
+                        <span className="text-muted-foreground/60">•</span>
+                        <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
+                        {tour.status === "completed" && tour.averageScore && (
+                          <span className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-200 dark:border-yellow-900 ml-auto">
+                            ⭐ {tour.averageScore}/10
+                          </span>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    
+                    {/* Compact actions container */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider">Actions rapides</span>
+                      <div className="flex gap-2">
+                        <Link href={`/tour/${tour._id}`} title="Gérer le tour" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors cursor-pointer">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="h-9 w-9 rounded-full border border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors cursor-pointer"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirm("Dupliquer ce tour ? (Les notes et photos ne seront pas copiées)")) {
+                              await duplicateTour({ tourId: tour._id });
+                            }
+                          }}
+                          title="Dupliquer le tour"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon"
+                          className="h-9 w-9 rounded-full bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900 border border-transparent hover:border-red-200 dark:hover:border-red-800 transition-colors cursor-pointer"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirm("Are you sure you want to delete this tour and all its memories?")) {
+                              await deleteTour({ tourId: tour._id });
+                            }
+                          }}
+                          title="Supprimer le tour"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              </div>
             ))}
 
             {tours.length === 0 && !isCreating && (
@@ -221,21 +257,38 @@ export default function TourList() {
           </div>
         </div>
       ) : (
-        <div className="space-y-8 animate-in fade-in duration-300">
+        <div className="space-y-6 animate-in fade-in duration-300">
           <div className="bg-primary/5 p-4 rounded-2xl border-2 border-primary/10 max-w-xl text-sm text-primary font-medium flex items-start gap-2.5">
             <span className="text-xl">💡</span>
-            <p>La Marketplace liste tous les parcours partagés par d&apos;autres gourmets. Vous pouvez les **importer** pour créer une copie vierge à votre nom et l&apos;ajuster à votre goût !</p>
+            <p>Découvrez tous les parcours partagés par d&apos;autres gourmets. Vous pouvez les **importer** pour créer une copie vierge à votre nom et l&apos;ajuster à votre goût !</p>
           </div>
 
           {/* Public Tours Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {publicTours.map((tour) => (
-              <Card key={tour._id} className="border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all hover:-translate-y-2 hover:border-secondary/40 bg-card group">
-                <CardHeader className="bg-secondary/5 pb-6 border-b-4 border-transparent group-hover:border-secondary/10 transition-colors">
-                  <CardTitle className="text-2xl font-bold font-display truncate">
+              <Card key={tour._id} className="border-2 sm:border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all bg-card">
+                {/* Visual Preview Photos */}
+                {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
+                  <div className="flex gap-1.5 px-4 pt-4 select-none">
+                    {tour.previewPhotos.map((url, i) => (
+                      <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
+                        <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-4 pt-4 select-none">
+                    <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
+                      🍩 Pas encore de photos de dégustation
+                    </div>
+                  </div>
+                )}
+
+                <CardHeader className="pt-4 pb-4">
+                  <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
                     {tour.name}
                   </CardTitle>
-                  <CardDescription className="text-sm font-medium flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
+                  <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
                     <span className="text-secondary font-bold">📅 {(() => {
                       const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
                       try {
@@ -248,27 +301,30 @@ export default function TourList() {
                     <span className="text-muted-foreground/60">•</span>
                     <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
                     {tour.status === "completed" && tour.averageScore && (
-                      <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold border border-yellow-200 ml-auto">
+                      <span className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-200 dark:border-yellow-900 ml-auto">
                         ⭐ {tour.averageScore}/10
                       </span>
                     )}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-6">
+                
+                {/* Compact actions container */}
+                <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1">
+                  <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider">Découverte</span>
                   <Button 
                     disabled={isImporting !== null}
                     onClick={() => handleImport(tour._id)}
-                    className="w-full text-lg h-12 font-bold font-display border-2 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-[0_4px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="h-9 px-4 text-xs font-display font-black border-2 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-[0_2.5px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {isImporting === tour._id ? (
-                      <>Importation en cours...</>
+                      <>Importation...</>
                     ) : (
                       <>
-                        <Download className="w-5 h-5" /> Importer ce Tour 📥
+                        <Download className="w-3.5 h-3.5" /> Importer 📥
                       </>
                     )}
                   </Button>
-                </CardContent>
+                </div>
               </Card>
             ))}
 

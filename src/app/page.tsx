@@ -76,18 +76,17 @@ export default async function Home() {
       />
       
       <main className="w-full max-w-6xl mx-auto px-3 sm:px-6 pt-8 sm:pt-16 space-y-6 relative z-10">
-        <div className="flex justify-between items-center bg-card p-8 rounded-3xl border-4 border-border shadow-xl">
-          <div className="flex gap-6 items-center">
-            <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center p-2 border-2 border-primary">
-               <Image src="/donut.png" alt="Vito" width={60} height={60} className="drop-shadow-sm mix-blend-multiply contrast-125 animate-[spin_12s_linear_infinite]" />
+        <div className="flex justify-between items-center bg-card p-3 sm:p-4 rounded-2xl border-2 border-border shadow-md select-none">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 p-1 flex-shrink-0">
+               <Image src="/donut.png" alt="Vito" width={22} height={22} className="drop-shadow-sm mix-blend-multiply contrast-125 animate-[spin_12s_linear_infinite]" />
             </div>
-            <div>
-              <h1 className="text-5xl font-display font-black text-primary drop-shadow-sm tracking-tight">My Tours</h1>
-              <p className="text-xl font-medium text-muted-foreground mt-2">Ready for the next bite? 🍔</p>
-            </div>
+            <h1 className={`text-2xl sm:text-3xl tracking-tight text-primary drop-shadow-sm ${shrikhand.className}`}>
+              Vitour
+            </h1>
           </div>
           <div className="flex items-center gap-4">
-            <UserButton appearance={{ elements: { userButtonAvatarBox: "w-12 h-12" } }} />
+            <UserButton appearance={{ elements: { userButtonAvatarBox: "w-9 h-9" } }} />
           </div>
         </div>
 
