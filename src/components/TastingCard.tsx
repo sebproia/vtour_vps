@@ -180,21 +180,18 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
     setIsDragging(false);
   };
 
-  const getAvatarSrc = (score: number) => {
-    if (score < 3.0) return "/grade-disgusted.png";
-    if (score < 5.5) return "/grade-skeptical.png";
-    if (score < 7.5) return "/grade-happy.png";
-    if (score < 9.0) return "/grade-smiling.png";
-    return "/grade-laughing.png";
+  const getAvatarConfig = (score: number) => {
+    if (score < 3.0) return { src: "/grade-disgusted.png", size: 135 };
+    if (score < 5.5) return { src: "/grade-skeptical.png", size: 145 };
+    if (score < 7.5) return { src: "/grade-happy.png", size: 155 };
+    if (score < 9.0) return { src: "/grade-smiling.png", size: 165 };
+    return { src: "/grade-laughing.png", size: 175 };
   };
 
   const scoreVal = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
   const donutRotation = (scoreVal - 1.0) * 40; // 40 degrees per score unit (360 / 9)
   
-  // Calculate dynamic avatar size based on score (starts at 120px, scales up to 155px at score 10)
-  const baseSize = 120;
-  const maxSize = 155;
-  const avatarSize = baseSize + ((scoreVal - 1.0) / 9.0) * (maxSize - baseSize);
+  const { src: avatarSrc, size: avatarSize } = getAvatarConfig(scoreVal);
 
   return (
     <div className="space-y-4 pt-2">
@@ -221,7 +218,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-46%", "-50%"] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
             >
-              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[25deg]">
+              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[-20deg]">
                 <path d="M4 28 C 1 20, 4 10, 14 6" />
                 <path d="M8 6 L14 6 L14 12" />
               </svg>
@@ -233,7 +230,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-54%", "-50%"] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", delay: 1.25 }}
             >
-              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[205deg]">
+              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[160deg]">
                 <path d="M4 28 C 1 20, 4 10, 14 6" />
                 <path d="M8 6 L14 6 L14 12" />
               </svg>
@@ -264,7 +261,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
             {/* Center Hole cutout & Fixed character avatar */}
             <div className="absolute w-[90px] h-[90px] rounded-full bg-card border-4 border-primary/20 shadow-inner flex items-center justify-center pointer-events-none select-none">
               <img 
-                src={getAvatarSrc(scoreVal)} 
+                src={avatarSrc} 
                 alt="Avatar note" 
                 className="max-w-none object-contain select-none pointer-events-none z-10 translate-y-2.5 transition-all duration-75"
                 style={{ width: `${avatarSize}px`, height: `${avatarSize}px` }}
