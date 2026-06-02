@@ -3,13 +3,13 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check } from "lucide-react";
+import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check, Share2 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUser } from "@clerk/nextjs";
@@ -47,6 +47,36 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    if (!tour || typeof window === "undefined") return;
+    const joinUrl = `${window.location.origin}/join/${tourId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Rejoins le tour : ${tour.name}! 🍔`,
+          text: `Suis l'itinéraire de notre Food Tour "${tour.name}" en direct ! 🍩`,
+          url: joinUrl,
+        });
+        return;
+      } catch (err) {
+        if ((err as Error).name === "AbortError") {
+          return;
+        }
+        console.log("Share failed, falling back to copy:", err);
+      }
+    }
+    
+    // Fallback to copy to clipboard
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
 
   const handleOptimize = async () => {
     setIsOptimizing(true);
@@ -159,12 +189,40 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               <DialogHeader>
                 <DialogTitle className="text-2xl sm:text-3xl font-display font-black text-center text-primary">Join the Tour! 🍩</DialogTitle>
               </DialogHeader>
-              <div className="flex justify-center p-4 bg-white rounded-2xl border-2 border-muted mx-auto shadow-inner mt-2">
-                <QRCode value={`${typeof window !== "undefined" ? window.location.origin : ""}/join/${tourId}`} size={200} />
+              <div 
+                className="flex justify-center p-4 bg-white rounded-2xl border-2 border-muted mx-auto shadow-inner mt-2"
+                style={{ colorScheme: "light" }}
+              >
+                <QRCode 
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/join/${tourId}`} 
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                  style={{ colorScheme: "light" }}
+                />
               </div>
               <p className="text-center text-sm font-medium text-muted-foreground mt-2">
                 Scan this with your phone camera!
               </p>
+              <div className="flex flex-col items-center gap-3 mt-4 border-t-2 border-border/50 pt-4">
+                <Button
+                  onClick={handleShare}
+                  className="w-full flex items-center justify-center gap-2 h-11 px-4 text-sm font-display font-black rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_3px_0_hsl(190,80%,40%)] hover:translate-y-0.5 hover:shadow-[0_1px_0_hsl(190,80%,40%)] transition-all"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4" /> LIEN COPIÉ ! 📋
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-4 h-4" /> PARTAGER LE LIEN 🚀
+                    </>
+                  )}
+                </Button>
+                <span className="text-[10px] text-muted-foreground break-all text-center max-w-[280px]">
+                  {typeof window !== "undefined" ? `${window.location.origin}/join/${tourId}` : ""}
+                </span>
+              </div>
             </DialogContent>
           </Dialog>
 
