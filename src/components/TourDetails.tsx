@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check, Share2, ChevronLeft, ChevronRight, Navigation2 } from "lucide-react";
+import { MapPin, PlusCircle, Plus, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check, Share2, ChevronLeft, ChevronRight, Navigation2 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useLoadScript } from "@react-google-maps/api";
@@ -720,24 +720,29 @@ export default function TourDetails({ tourId }: { tourId: string }) {
 
                             {/* Walking transit connector and Inline insertion divider */}
                             {index < places.length - 1 && (
-                              <div className="flex items-center gap-2 pl-7 py-1 text-xs font-bold text-muted-foreground animate-in fade-in duration-300 animate-out fade-out select-none">
-                                <div className="w-0.5 h-6 bg-dashed border-l-2 border-dashed border-border/80"></div>
-                                {travelTimes[place._id] && (
-                                  <span className="flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded-full border border-border/40 select-none">
-                                    🚶 {travelTimes[place._id]} de marche
-                                  </span>
-                                )}
+                              <div className="relative my-2 pl-14 min-h-[32px] flex items-center select-none animate-in fade-in duration-300 animate-out fade-out">
+                                {/* Vertical dashed line aligned with numbers */}
+                                <div className="absolute left-[30px] sm:left-[36px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-border/80"></div>
+                                
+                                {/* Centered timeline circle button for inserting stop */}
                                 {isDraft && (
-                                  <Button
-                                    size="sm"
+                                  <button
                                     onClick={() => {
                                       setInsertIndex(index + 1);
                                       setIsAddModalOpen(true);
                                     }}
-                                    className="h-6 px-2.5 text-[10px] font-display font-black rounded-full bg-card hover:bg-primary hover:text-primary-foreground border border-border shadow-sm hover:-translate-y-0.5 transition-all flex items-center gap-0.5 cursor-pointer ml-auto mr-4"
+                                    className="absolute left-[16px] sm:left-[22px] top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-secondary hover:bg-primary text-secondary-foreground hover:text-primary-foreground border-2 border-background shadow-md hover:-translate-y-1 hover:scale-105 transition-all flex items-center justify-center cursor-pointer"
+                                    title="Insérer un arrêt ici"
                                   >
-                                    <PlusCircle className="w-3.5 h-3.5" /> Insérer un arrêt ici
-                                  </Button>
+                                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                                  </button>
+                                )}
+
+                                {/* Walking distance tag next to the timeline */}
+                                {travelTimes[place._id] && (
+                                  <span className="ml-2 flex items-center gap-1 bg-muted/70 px-2.5 py-0.5 rounded-full border border-border/60 text-[10px] font-bold text-muted-foreground shadow-sm">
+                                    🚶 {travelTimes[place._id]} de marche
+                                  </span>
                                 )}
                               </div>
                             )}
