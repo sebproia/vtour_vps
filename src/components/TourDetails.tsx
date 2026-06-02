@@ -489,12 +489,12 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                           </p>
                           {activePlace.openingHours && (
                             <p className="text-[11px] font-bold text-amber-600 flex items-center gap-1 pl-5">
-                              🕒 Horaires ce jour : {activePlace.openingHours}
+                              🕒 {activePlace.openingHours}
                             </p>
                           )}
                           {viewIndex < places.length - 1 && travelTimes[activePlace._id] && (
                             <p className="text-[11px] font-bold text-primary flex items-center gap-1 pl-5">
-                              🚶 Trajet vers le prochain arrêt : {travelTimes[activePlace._id]} de marche
+                              🚶 prochain arrêt : {travelTimes[activePlace._id].replace('mins', 'min')}
                             </p>
                           )}
                         </div>
