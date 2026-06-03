@@ -184,7 +184,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
     if (score < 3.0) return { src: "/grade-disgusted.png", size: 135 };
     if (score < 5.5) return { src: "/grade-skeptical.png", size: 150 };
     if (score < 7.5) return { src: "/grade-happy.png", size: 160 };
-    if (score < 9.0) return { src: "/grade-smiling.png", size: 175 };
+    if (score < 9.0) return { src: "/grade-smiling.png", size: 168 };
     return { src: "/grade-laughing.png", size: 195 };
   };
 

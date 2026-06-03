@@ -6,11 +6,11 @@ src_dir = r"c:\Users\sebas\test_antigrativy\food-tour-app\public"
 images_to_optimize = {
     "donut.png": 300,
     "donut-dial.png": 300,
-    "grade-disgusted.png": 200,
-    "grade-skeptical.png": 200,
-    "grade-smiling.png": 200,
-    "grade-happy.png": 200,
-    "grade-laughing.png": 200
+    "grade-disgusted.png": 350,
+    "grade-skeptical.png": 350,
+    "grade-smiling.png": 350,
+    "grade-happy.png": 350,
+    "grade-laughing.png": 350
 }
 
 print("--- Optimizing Images ---")
