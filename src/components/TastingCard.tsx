@@ -181,17 +181,17 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
   };
 
   const getAvatarConfig = (score: number) => {
-    if (score < 3.5) return { src: "/grade-disgusted.png", size: 155 };
-    if (score < 6.0) return { src: "/grade-skeptical.png", size: 170 };
-    if (score < 7.5) return { src: "/grade-happy.png", size: 190 };
-    if (score < 9.0) return { src: "/grade-smiling.png", size: 172 };
-    return { src: "/grade-laughing.png", size: 200 };
+    if (score < 3.5) return { src: "/grade-disgusted.png", size: 155, offsetClass: "" };
+    if (score < 6.0) return { src: "/grade-skeptical.png", size: 170, offsetClass: "" };
+    if (score < 7.5) return { src: "/grade-happy.png", size: 190, offsetClass: "" };
+    if (score < 9.0) return { src: "/grade-smiling.png", size: 172, offsetClass: "" };
+    return { src: "/grade-laughing.png", size: 200, offsetClass: "-translate-x-1" };
   };
 
   const scoreVal = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
   const donutRotation = (scoreVal - 1.0) * 40; // 40 degrees per score unit (360 / 9)
   
-  const { src: avatarSrc, size: avatarSize } = getAvatarConfig(scoreVal);
+  const { src: avatarSrc, size: avatarSize, offsetClass: avatarOffset } = getAvatarConfig(scoreVal);
 
   return (
     <div className="space-y-4 pt-2">
@@ -263,7 +263,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
               <img 
                 src={avatarSrc} 
                 alt="Avatar note" 
-                className="max-w-none object-contain select-none pointer-events-none z-10 translate-y-2.5 transition-all duration-75"
+                className={`max-w-none object-contain select-none pointer-events-none z-10 translate-y-2.5 transition-all duration-75 ${avatarOffset}`}
                 style={{ width: `${avatarSize}px`, height: `${avatarSize}px` }}
               />
             </div>
