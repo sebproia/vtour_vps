@@ -9,7 +9,15 @@ import PhotoWall from "@/components/PhotoWall";
 import { Loader2, Send } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function TastingCard({ placeId, guestName }: { placeId: Id<"places">, guestName: string }) {
+export default function TastingCard({ 
+  placeId, 
+  guestName, 
+  isGuestView = false 
+}: { 
+  placeId: Id<"places">, 
+  guestName: string, 
+  isGuestView?: boolean 
+}) {
   const addRating = useMutation(api.ratings.addRating);
   const ratings = useQuery(api.ratings.getRatingsByPlace, { placeId });
   const [selectedScore, setSelectedScore] = useState<number | null>(5.0);
@@ -45,8 +53,8 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
       <div className="text-center space-y-4 pt-2 animate-in fade-in duration-300">
         <div className="flex flex-col items-center gap-2">
           <div className="text-4xl">✅</div>
-          <h3 className="text-2xl font-display font-black text-green-600">Noté !</h3>
-          <p className="text-xs font-semibold text-muted-foreground">En attente du lancement de l&apos;arrêt suivant…</p>
+          <h3 className="text-2xl font-display font-black text-emerald-400 drop-shadow-sm">Noté !</h3>
+          <p className={`text-xs font-semibold ${isGuestView ? "text-white/70" : "text-muted-foreground"}`}>En attente du lancement de l&apos;arrêt suivant…</p>
           
           <Button
             onClick={() => {
@@ -63,19 +71,23 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
         </div>
 
         {/* Group Vibe - Clean flat list with dashed separator */}
-        <div className="mt-6 pt-4 border-t-2 border-dashed border-border/80 text-left space-y-3">
-          <h4 className="font-display font-black text-lg text-primary">Group Vibe 🍔</h4>
+        <div className={`mt-6 pt-4 border-t-2 border-dashed text-left space-y-3 ${isGuestView ? "border-white/30" : "border-border/80"}`}>
+          <h4 className={`font-display font-black text-lg ${isGuestView ? "text-white drop-shadow-sm" : "text-primary"}`}>Group Vibe 🍔</h4>
           <div className="grid grid-cols-1 gap-2">
             {ratings.filter(r => r.score !== undefined && r.score !== null).map(r => (
-              <div key={r._id} className="flex flex-col gap-1 bg-muted/60 px-4 py-2.5 rounded-xl border border-border/60">
+              <div key={r._id} className={`flex flex-col gap-1 bg-muted/60 px-4 py-2.5 rounded-xl border ${isGuestView ? "border-white/20" : "border-border/60"}`}>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-foreground">{r.guestName}</span>
-                  <span className="font-black text-primary bg-primary/10 px-2.5 py-0.5 rounded-lg text-xs border border-primary/20 flex-shrink-0">
-                    {r.score}/10
+                  <span className={`font-black px-2.5 py-0.5 rounded-lg text-xs flex-shrink-0 ${
+                    isGuestView
+                      ? "text-white bg-primary border border-primary/30"
+                      : "text-primary bg-primary/10 border border-primary/20"
+                  }`}>
+                    {r.score!.toFixed(1)}/10
                   </span>
                 </div>
                 {r.comment && (
-                  <p className="text-xs text-muted-foreground italic mt-0.5 whitespace-pre-wrap break-words">
+                  <p className="text-xs text-foreground/75 italic mt-0.5 whitespace-pre-wrap break-words">
                     &ldquo;{r.comment}&rdquo;
                   </p>
                 )}
@@ -97,7 +109,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
       await addRating({ 
         placeId, 
         guestName, 
-        score: selectedScore === -1 ? undefined : selectedScore,
+        score: selectedScore === -1 ? undefined : Math.round(selectedScore * 10) / 10,
         comment: comment.trim() || undefined
       });
       setIsEditing(false);
@@ -195,7 +207,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
 
   return (
     <div className="space-y-4 pt-2">
-      <h3 className="text-lg font-display font-black text-center text-foreground select-none">
+      <h3 className={`text-lg font-display font-black text-center select-none ${isGuestView ? "text-white drop-shadow-sm" : "text-foreground"}`}>
         {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "C'était bon ? 😋"}
       </h3>
       
@@ -214,7 +226,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
           >
             {/* Left Rotation Hint */}
             <motion.div 
-              className="absolute -left-6 top-1/2 pointer-events-none select-none text-primary/45 flex flex-col items-center"
+              className={`absolute -left-6 top-1/2 pointer-events-none select-none flex flex-col items-center ${isGuestView ? "text-white/50" : "text-primary/45"}`}
               animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-46%", "-50%"] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
             >
@@ -226,7 +238,7 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
 
             {/* Right Rotation Hint */}
             <motion.div 
-              className="absolute -right-6 top-1/2 pointer-events-none select-none text-primary/45 flex flex-col items-center"
+              className={`absolute -right-6 top-1/2 pointer-events-none select-none flex flex-col items-center ${isGuestView ? "text-white/50" : "text-primary/45"}`}
               animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-54%", "-50%"] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", delay: 1.25 }}
             >
@@ -271,10 +283,10 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
 
           {/* Rating Score Text */}
           <div className="text-center select-none">
-            <div className="text-3xl font-display font-black text-primary drop-shadow-sm select-none">
-              {scoreVal.toFixed(1)} <span className="text-lg text-muted-foreground">/ 10</span>
+            <div className={`text-3xl font-display font-black drop-shadow-sm select-none ${isGuestView ? "text-white" : "text-primary"}`}>
+              {scoreVal.toFixed(1)} <span className={`text-lg ${isGuestView ? "text-white/70" : "text-muted-foreground"}`}>/ 10</span>
             </div>
-            <p className="text-[10px] text-muted-foreground/60 mt-1 select-none font-bold">
+            <p className={`text-[10px] mt-1 select-none font-bold ${isGuestView ? "text-white/80" : "text-muted-foreground/60"}`}>
               Faites tourner le donut pour ajuster votre note 🍩
             </p>
           </div>
@@ -282,27 +294,45 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
           <button 
             onClick={handlePass}
             disabled={isSubmitting}
-            className="text-xs font-semibold underline decoration-dotted text-muted-foreground hover:text-amber-500 transition-colors cursor-pointer select-none"
+            className={`text-xs font-semibold underline decoration-dotted transition-colors cursor-pointer select-none ${
+              isGuestView ? "text-white/80 hover:text-white" : "text-muted-foreground hover:text-amber-500"
+            }`}
           >
             Passer cet arrêt ⏭️
           </button>
         </div>
       ) : (
         <div className="text-center select-none py-6 space-y-4">
-          <p className="text-sm font-semibold text-muted-foreground">Vous avez choisi de passer cet arrêt.</p>
-          <button 
-            onClick={() => setSelectedScore(5.0)}
-            className="h-10 px-6 text-sm font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all rounded-xl cursor-pointer"
-          >
-            Donner une note 🍩
-          </button>
+          <p className={`text-sm font-semibold ${isGuestView ? "text-white/80" : "text-muted-foreground"}`}>Vous avez choisi de passer cet arrêt.</p>
+          <div className="flex flex-col items-center gap-3">
+            <button 
+              onClick={() => setSelectedScore(5.0)}
+              className={`h-10 px-6 text-sm font-display font-black transition-all rounded-xl cursor-pointer shadow-[0_3px_0_hsl(330,80%,40%)] hover:translate-y-0.5 ${
+                isGuestView 
+                  ? "bg-white text-[hsl(330,80%,50%)] hover:bg-white/90" 
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
+            >
+              Donner une note 🍩
+            </button>
+            {isEditing && (
+              <button
+                onClick={() => setIsEditing(false)}
+                className={`text-xs font-bold underline decoration-dotted transition-colors cursor-pointer ${
+                  isGuestView ? "text-white/80 hover:text-white" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Annuler
+              </button>
+            )}
+          </div>
         </div>
       )}
 
       {selectedScore !== null && selectedScore !== -1 && (
-        <div className="pt-4 border-t-2 border-dashed border-border/80 animate-in fade-in slide-in-from-top-4">
-          <div className="flex gap-2 items-end">
-            <div className="relative flex-grow flex items-end bg-card rounded-xl border-2 border-border focus-within:border-primary/50 transition-colors">
+        <div className={`pt-4 border-t-2 border-dashed animate-in fade-in slide-in-from-top-4 space-y-4 ${isGuestView ? "border-white/30" : "border-border/80"}`}>
+          <div className="flex flex-col gap-3">
+            <div className="bg-card rounded-xl border-2 border-border focus-within:border-primary/50 transition-colors">
               <textarea 
                 ref={textareaRef}
                 rows={1}
@@ -317,30 +347,42 @@ export default function TastingCard({ placeId, guestName }: { placeId: Id<"place
                     }
                   }
                 }}
-                className="w-full pr-12 pl-4 py-2.5 bg-transparent text-foreground font-medium focus:outline-none transition-colors text-sm resize-none overflow-y-hidden min-h-[44px] max-h-[150px] leading-relaxed"
+                className="w-full px-4 py-2.5 bg-transparent text-foreground font-medium focus:outline-none transition-colors text-sm resize-none overflow-y-hidden min-h-[44px] max-h-[150px] leading-relaxed"
                 disabled={isSubmitting}
               />
-              <button 
+            </div>
+            
+            <div className="flex flex-col items-center gap-2.5 w-full">
+              <Button 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="absolute right-1 bottom-1 w-9 h-9 rounded-lg bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
-                title="Envoyer"
+                className={`w-full h-12 text-base font-display font-black rounded-xl hover:translate-y-0.5 active:translate-y-1 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${
+                  isGuestView
+                    ? "bg-[hsl(190,80%,50%)] text-white hover:bg-[hsl(190,80%,45%)] shadow-[0_4px_0_hsl(190,80%,35%)] hover:shadow-[0_1px_0_hsl(190,80%,35%)]"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)]"
+                }`}
               >
                 {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Validation...
+                  </>
                 ) : (
-                  <Send className="w-4 h-4" />
+                  "Valider mon avis 🍩"
                 )}
-              </button>
+              </Button>
+              
+              {isEditing && (
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className={`text-xs font-bold underline decoration-dotted transition-colors cursor-pointer py-1 ${
+                    isGuestView ? "text-white/80 hover:text-white" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Annuler la modification
+                </button>
+              )}
             </div>
-            {isEditing && (
-              <button
-                onClick={() => setIsEditing(false)}
-                className="text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer flex-shrink-0 pb-3"
-              >
-                Annuler
-              </button>
-            )}
           </div>
         </div>
       )}

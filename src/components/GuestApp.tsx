@@ -134,7 +134,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
         </div>
 
         {/* Tasting card */}
-        <TastingCard key={currentPlace._id} placeId={currentPlace._id} guestName={name} />
+        <TastingCard key={currentPlace._id} placeId={currentPlace._id} guestName={name} isGuestView={true} />
 
         {/* Mystery next stop */}
         {tour.currentStepIndex < places.length - 1 && (
@@ -185,7 +185,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
                       </div>
                       {isExpanded && (
                         <div className="p-4 border-t border-white/10 bg-black/20" onClick={(e) => e.stopPropagation()}>
-                          <TastingCard key={place._id} placeId={place._id} guestName={name} />
+                          <TastingCard key={place._id} placeId={place._id} guestName={name} isGuestView={true} />
                         </div>
                       )}
                     </Card>
