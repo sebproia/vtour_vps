@@ -9,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, ImagePlus } from "lucide-react";
+import { Camera, ImagePlus, ChevronLeft, ChevronRight } from "lucide-react";
 import TastingCard from "@/components/TastingCard";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function GuestApp({ tourId }: { tourId: string }) {
   const tId = tourId as Id<"tours">;
@@ -20,6 +21,14 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   const [name, setName] = useState("");
   const [hasJoined, setHasJoined] = useState(false);
   const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null);
+  const [viewIndex, setViewIndex] = useState<number>(0);
+
+  // Sync viewIndex with the tour's current step when it changes
+  useEffect(() => {
+    if (tour !== undefined && tour !== null) {
+      setViewIndex(tour.currentStepIndex);
+    }
+  }, [tour?.currentStepIndex]);
 
   useEffect(() => {
     const savedName = localStorage.getItem(`vitour_${tId}_name`);
@@ -114,86 +123,158 @@ export default function GuestApp({ tourId }: { tourId: string }) {
 
   // Live Screen
   if (tour.status === "live" && currentPlace) {
+    const displayPlace = places[viewIndex] || currentPlace;
+    
+    const isCurrentStep = tour.currentStepIndex === displayPlace.order;
+    const isPassed = tour.currentStepIndex > displayPlace.order;
+    const isUpcoming = tour.currentStepIndex < displayPlace.order;
+
+    const handleDragEnd = (event: any, info: any) => {
+      const swipeThreshold = 50; // pixels
+      if (info.offset.x < -swipeThreshold) {
+        // Swiped left -> Go to next stop
+        if (viewIndex < places.length - 1) {
+          setViewIndex(viewIndex + 1);
+        }
+      } else if (info.offset.x > swipeThreshold) {
+        // Swiped right -> Go to previous stop
+        if (viewIndex > 0) {
+          setViewIndex(viewIndex - 1);
+        }
+      }
+    };
+
     return (
-      <div key={currentPlace._id} className="space-y-4 animate-in slide-in-from-right-8 duration-500">
+      <div className="space-y-4 animate-in fade-in duration-500">
         {/* Status bar */}
-        <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm text-white p-3 rounded-2xl border-2 border-white/20 shadow-lg">
-          <div className="font-display font-black text-sm">📍 STOP {currentPlace.order + 1}/{places.length}</div>
+        <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm text-white p-3 rounded-2xl border-2 border-white/20 shadow-lg select-none">
+          <div className="font-display font-black text-sm">📍 STOP {displayPlace.order + 1}/{places.length}</div>
           <div className="font-display font-bold bg-white/20 px-3 py-1 rounded-full text-sm">{name}</div>
         </div>
 
-        {/* Current place */}
-        <div className="text-center space-y-1 mt-2">
-          <h2 className="text-2xl sm:text-3xl font-display font-black text-white drop-shadow-md leading-tight">{currentPlace.name}</h2>
-          <p className="text-sm sm:text-base text-white/70 font-medium">{currentPlace.address}</p>
-          {currentPlace.adminComment && (
-            <div className="inline-block mt-2 bg-white/15 border border-white/20 text-white px-3 py-1.5 rounded-xl text-sm">
-              <span className="font-bold">💡</span> <span className="font-medium">{currentPlace.adminComment}</span>
+        {/* Progress dots & stop numbers */}
+        {places.length > 0 && (
+          <div className="flex flex-col gap-2 bg-white/15 backdrop-blur-sm p-4 rounded-2xl border-2 border-white/20 shadow-lg select-none">
+            <div className="flex justify-between items-center text-white">
+              <span className="text-xs font-bold uppercase tracking-wider text-white/70">Progression</span>
+              <span className="text-sm font-display font-black">
+                Arrêt {viewIndex + 1} / {places.length}
+              </span>
             </div>
-          )}
+            <div className="flex flex-wrap gap-2 pt-1">
+              {places.map((p, idx) => (
+                <button
+                  key={p._id}
+                  onClick={() => setViewIndex(idx)}
+                  className={`h-3 rounded-full transition-all duration-300 cursor-pointer ${
+                    idx === viewIndex 
+                      ? "w-10 bg-[hsl(190,80%,50%)] shadow-sm" 
+                      : idx === tour.currentStepIndex
+                      ? "w-3 bg-white animate-pulse"
+                      : idx < tour.currentStepIndex
+                      ? "w-3 bg-emerald-400"
+                      : "w-3 bg-white/20 hover:bg-white/40"
+                  }`}
+                  title={`Aller à l'arrêt ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Cards Carousel Frame */}
+        <div className="relative overflow-visible min-h-[400px]">
+          {/* Visual swipe arrows on sides (only on desktop/hover) */}
+          <div className="absolute top-1/2 -left-12 -translate-y-1/2 hidden md:block">
+            <Button
+              size="icon"
+              variant="outline"
+              disabled={viewIndex === 0}
+              onClick={() => setViewIndex(viewIndex - 1)}
+              className="w-10 h-10 rounded-full bg-white/15 border-2 border-white/20 text-white shadow-md hover:bg-white/25 transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+          </div>
+          <div className="absolute top-1/2 -right-12 -translate-y-1/2 hidden md:block">
+            <Button
+              size="icon"
+              variant="outline"
+              disabled={viewIndex === places.length - 1}
+              onClick={() => setViewIndex(viewIndex + 1)}
+              className="w-10 h-10 rounded-full bg-white/15 border-2 border-white/20 text-white shadow-md hover:bg-white/25 transition-colors cursor-pointer"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </Button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={viewIndex}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.6}
+              onDragEnd={handleDragEnd}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white/15 backdrop-blur-sm border-2 border-white/20 rounded-[2.2rem] p-5 sm:p-6 shadow-2xl space-y-4 touch-none cursor-grab active:cursor-grabbing text-white relative overflow-hidden"
+            >
+              {/* Top status bar of card */}
+              <div className="flex justify-between items-center pb-2 border-b-2 border-white/10 select-none">
+                <span className={`text-[10px] sm:text-xs font-bold font-display px-3 py-1 rounded-full border-2 ${
+                  isCurrentStep ? "bg-white text-[hsl(330,80%,50%)] border-white animate-pulse" :
+                  isPassed ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" :
+                  "bg-white/10 text-white/50 border-white/10"
+                }`}>
+                  {isCurrentStep ? "📍 EN COURS" :
+                   isPassed ? "✅ ARRÊT PRÉCÉDENT" :
+                   "🔒 ARRÊT FUTUR"}
+                </span>
+                <span className="text-xs sm:text-sm font-bold font-display text-white/60 bg-white/10 px-3 py-1 rounded-full">
+                  {displayPlace.order + 1} / {places.length}
+                </span>
+              </div>
+
+              {/* Establishment Info */}
+              <div className="space-y-2 pt-2 text-center">
+                <h2 className="text-2xl sm:text-3xl font-display font-black text-white drop-shadow-md leading-tight">
+                  {isUpcoming ? "Arrêt Mystère 🤫" : displayPlace.name}
+                </h2>
+                <p className="text-sm sm:text-base text-white/70 font-medium">
+                  {isUpcoming ? "Adresse secrète ✨" : displayPlace.address}
+                </p>
+                {displayPlace.adminComment && !isUpcoming && (
+                  <div className="inline-block mt-2 bg-white/15 border border-white/20 text-white px-3 py-1.5 rounded-xl text-sm text-left">
+                    <span className="font-bold">💡</span> <span className="font-medium">{displayPlace.adminComment}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Tasting Card (Locked for future stops) */}
+              <div className="pt-4 border-t-2 border-white/10">
+                {isUpcoming ? (
+                  <div className="p-6 text-center bg-white/5 rounded-2xl border-2 border-dashed border-white/25 text-white/80 animate-in fade-in duration-300">
+                    <span className="text-4xl block mb-2">🔒</span>
+                    <p className="font-display font-black text-sm">Arrêt non encore actif</p>
+                    <p className="text-xs font-medium mt-1">
+                      Attendez que l&apos;organisateur lance cet arrêt pour pouvoir y participer et donner votre avis ! 🍩
+                    </p>
+                  </div>
+                ) : (
+                  <TastingCard key={displayPlace._id} placeId={displayPlace._id} guestName={name} isGuestView={true} />
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Left/Right swipe indicators for mobile */}
+          <div className="flex justify-between items-center text-[10px] text-white/50 px-4 pt-3 select-none">
+            <span>← Glisser pour reculer</span>
+            <span>Glisser pour avancer →</span>
+          </div>
         </div>
-
-        {/* Tasting card */}
-        <TastingCard key={currentPlace._id} placeId={currentPlace._id} guestName={name} isGuestView={true} />
-
-        {/* Mystery next stop */}
-        {tour.currentStepIndex < places.length - 1 && (
-          <div className="mt-6 text-center p-4 bg-white/10 backdrop-blur-sm rounded-2xl border-2 border-dashed border-white/20 relative overflow-hidden">
-            <div className="text-4xl mb-2">🤫</div>
-            <h3 className="text-lg font-display font-black text-white">Prochaine adresse...</h3>
-            <p className="text-sm font-bold bg-white/20 text-white px-3 py-0.5 rounded-full inline-block mt-1 transform -rotate-2">Mystère !</p>
-          </div>
-        )}
-
-        {/* Past Stops Section */}
-        {places.filter(p => p.order < tour.currentStepIndex).length > 0 && (
-          <div className="mt-8 space-y-3">
-            <h3 className="text-xl font-display font-black text-white flex items-center gap-2">
-              ⏪ Arrêts précédents
-            </h3>
-            <div className="space-y-3">
-              {places
-                .filter(p => p.order < tour.currentStepIndex)
-                .sort((a, b) => b.order - a.order)
-                .map((place) => {
-                  const isExpanded = expandedPlaceId === place._id;
-                  return (
-                    <Card 
-                      key={place._id}
-                      className={`border-2 rounded-2xl overflow-hidden transition-all bg-white/10 border-white/20 text-white cursor-pointer ${
-                        isExpanded ? "ring-2 ring-[hsl(190,80%,50%)] bg-white/15" : "hover:bg-white/15"
-                      }`}
-                      onClick={() => setExpandedPlaceId(isExpanded ? null : place._id)}
-                    >
-                      <div className="flex p-4 gap-3 items-center justify-between">
-                        <div className="flex gap-3 items-center min-w-0">
-                          <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-white/20 border border-white/30 font-display font-black text-sm">
-                            {place.order + 1}
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-base font-bold font-display truncate">
-                              {place.name}
-                            </h4>
-                            <p className="text-white/60 text-xs truncate">
-                              {place.address}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-xs font-bold text-white/50 bg-white/10 px-2 py-1 rounded-lg">
-                          {isExpanded ? "Fermer 🔼" : "Modifier ✏️"}
-                        </div>
-                      </div>
-                      {isExpanded && (
-                        <div className="p-4 border-t border-white/10 bg-black/20" onClick={(e) => e.stopPropagation()}>
-                          <TastingCard key={place._id} placeId={place._id} guestName={name} isGuestView={true} />
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })}
-            </div>
-          </div>
-        )}
       </div>
     );
   }
