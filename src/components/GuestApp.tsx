@@ -280,7 +280,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
                   "bg-white/10 text-white/50 border-white/10"
                 }`}>
                   {isCurrentStep ? "📍 EN COURS" :
-                   isPassed ? "✅ ARRÊT PRÉCÉDENT" :
+                   isPassed ? "✅ TERMINÉ" :
                    "🔒 ARRÊT FUTUR"}
                 </span>
                 <span className="text-xs sm:text-sm font-bold font-display text-white/60 bg-white/10 px-3 py-1 rounded-full">
@@ -293,9 +293,17 @@ export default function GuestApp({ tourId }: { tourId: string }) {
                 <h2 className="text-2xl sm:text-3xl font-display font-black text-white drop-shadow-md leading-tight">
                   {isUpcoming ? "Arrêt Mystère 🤫" : displayPlace.name}
                 </h2>
-                <p className="text-sm sm:text-base text-white/70 font-medium">
-                  {isUpcoming ? "Adresse secrète ✨" : displayPlace.address}
-                </p>
+                {isUpcoming ? (
+                  travelTimeToActive && (
+                    <p className="text-sm font-bold text-white/80 flex items-center justify-center gap-1 select-none pt-0.5">
+                      <span>🚶 {travelTimeToActive.replace('mins', 'min')}</span>
+                    </p>
+                  )
+                ) : (
+                  <p className="text-sm sm:text-base text-white/70 font-medium">
+                    {displayPlace.address}
+                  </p>
+                )}
                 {displayPlace.adminComment && !isUpcoming && (
                   <div className="inline-block mt-2 bg-white/15 border border-white/20 text-white px-3 py-1.5 rounded-xl text-sm text-left">
                     <span className="font-bold">💡</span> <span className="font-medium">{displayPlace.adminComment}</span>
@@ -310,13 +318,8 @@ export default function GuestApp({ tourId }: { tourId: string }) {
                     <span className="text-4xl block mb-2">🔒</span>
                     <p className="font-display font-black text-sm">Arrêt non encore actif</p>
                     <p className="text-xs font-medium mt-1">
-                      Attendez que l&apos;organisateur lance cet arrêt pour pouvoir y participer et donner votre avis ! 🍩
+                      Attendez que l&apos;organisateur lance cet arrêt pour pouvoir y participer et donner votre avis !
                     </p>
-                    {travelTimeToActive && (
-                      <div className="mt-4 pt-3 border-t border-white/10 text-xs font-bold text-[hsl(190,80%,55%)] flex items-center justify-center gap-1.5 select-none">
-                        <span>🚶 Temps de trajet estimé : {travelTimeToActive.replace('mins', 'min')} de marche</span>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <TastingCard key={displayPlace._id} placeId={displayPlace._id} guestName={name} isGuestView={true} />

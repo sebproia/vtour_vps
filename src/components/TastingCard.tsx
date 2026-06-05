@@ -66,13 +66,19 @@ export default function TastingCard({
             }}
             className="mt-1 h-9 px-4 text-xs font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-0.5 hover:shadow-[0_0px_0_hsl(190,80%,40%)] transition-all rounded-xl cursor-pointer"
           >
-            Modifier mon avis ✏️
+            Modifier mon avis
           </Button>
+
+          {isGuestView && (
+            <div className="text-[10px] font-bold text-white/40 flex items-center justify-center gap-1 select-none pt-1 animate-pulse">
+              <span>Glissez pour naviguer</span> <span>→</span>
+            </div>
+          )}
         </div>
 
         {/* Group Vibe - Clean flat list with dashed separator */}
         <div className={`mt-6 pt-4 border-t-2 border-dashed text-left space-y-3 ${isGuestView ? "border-white/30" : "border-border/80"}`}>
-          <h4 className={`font-display font-black text-lg ${isGuestView ? "text-white drop-shadow-sm" : "text-primary"}`}>Group Vibe 🍔</h4>
+          <h4 className={`font-display font-black text-lg ${isGuestView ? "text-white drop-shadow-sm" : "text-primary"}`}>Group Vibe</h4>
           <div className="grid grid-cols-1 gap-2">
             {ratings.filter(r => r.score !== undefined && r.score !== null).map(r => (
               <div key={r._id} className={`flex flex-col gap-1 bg-muted/60 px-4 py-2.5 rounded-xl border ${isGuestView ? "border-white/20" : "border-border/60"}`}>
@@ -208,7 +214,7 @@ export default function TastingCard({
   return (
     <div className="space-y-4 pt-2">
       <h3 className={`text-lg font-display font-black text-center select-none ${isGuestView ? "text-white drop-shadow-sm" : "text-foreground"}`}>
-        {selectedScore === -1 ? "Vous passez ce stop ⏭️" : "C'était bon ? 😋"}
+        {selectedScore === -1 ? "Vous passez ce stop" : "C'était bon ?"}
       </h3>
       
       {selectedScore !== -1 ? (
@@ -298,7 +304,7 @@ export default function TastingCard({
               isGuestView ? "text-white/80 hover:text-white" : "text-muted-foreground hover:text-amber-500"
             }`}
           >
-            Passer cet arrêt ⏭️
+            Passer cet arrêt
           </button>
         </div>
       ) : (
@@ -313,7 +319,7 @@ export default function TastingCard({
                   : "bg-primary text-primary-foreground hover:bg-primary/90"
               }`}
             >
-              Donner une note 🍩
+              Donner une note
             </button>
             {isEditing && (
               <button
@@ -368,7 +374,7 @@ export default function TastingCard({
                     Validation...
                   </>
                 ) : (
-                  "Valider mon avis 🍩"
+                  "Valider mon avis"
                 )}
               </Button>
               
