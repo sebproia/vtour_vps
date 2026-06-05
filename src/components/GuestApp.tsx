@@ -12,6 +12,9 @@ import Link from "next/link";
 import { Camera, ImagePlus, ChevronLeft, ChevronRight } from "lucide-react";
 import TastingCard from "@/components/TastingCard";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLoadScript } from "@react-google-maps/api";
+
+const libraries: "places"[] = ["places"];
 
 export default function GuestApp({ tourId }: { tourId: string }) {
   const tId = tourId as Id<"tours">;
@@ -22,6 +25,52 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   const [hasJoined, setHasJoined] = useState(false);
   const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null);
   const [viewIndex, setViewIndex] = useState<number>(0);
+  const [travelTimes, setTravelTimes] = useState<Record<string, string>>({});
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
+
+  useEffect(() => {
+    if (!isLoaded || !places || places.length < 2) {
+      setTravelTimes({});
+      return;
+    }
+
+    try {
+      const service = new google.maps.DistanceMatrixService();
+      
+      const origins = places.slice(0, -1).map(p => {
+        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
+        return p.address;
+      });
+      
+      const destinations = places.slice(1).map(p => {
+        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
+        return p.address;
+      });
+
+      service.getDistanceMatrix({
+        origins,
+        destinations,
+        travelMode: google.maps.TravelMode.WALKING,
+      }, (response, status) => {
+        if (status === "OK" && response) {
+          const times: Record<string, string> = {};
+          for (let i = 0; i < origins.length; i++) {
+            const element = response.rows[i]?.elements[i];
+            if (element && element.status === "OK") {
+              times[places[i]._id] = element.duration.text;
+            }
+          }
+          setTravelTimes(times);
+        }
+      });
+    } catch (err) {
+      console.error("Error calculating travel times:", err);
+    }
+  }, [isLoaded, places]);
 
   // Sync viewIndex with the tour's current step when it changes
   useEffect(() => {
@@ -144,12 +193,14 @@ export default function GuestApp({ tourId }: { tourId: string }) {
       }
     };
 
+    const previousPlace = places.find(p => p.order === displayPlace.order - 1);
+    const travelTimeToActive = previousPlace ? travelTimes[previousPlace._id] : null;
+
     return (
       <div className="space-y-4 animate-in fade-in duration-500">
         {/* Status bar */}
-        <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm text-white p-3 rounded-2xl border-2 border-white/20 shadow-lg select-none">
-          <div className="font-display font-black text-sm">📍 STOP {displayPlace.order + 1}/{places.length}</div>
-          <div className="font-display font-bold bg-white/20 px-3 py-1 rounded-full text-sm">{name}</div>
+        <div className="flex justify-end items-center select-none">
+          <div className="font-display font-bold bg-white/15 backdrop-blur-sm border border-white/25 text-white px-4 py-1.5 rounded-full text-sm shadow-md">{name}</div>
         </div>
 
         {/* Progress dots & stop numbers */}
@@ -261,6 +312,11 @@ export default function GuestApp({ tourId }: { tourId: string }) {
                     <p className="text-xs font-medium mt-1">
                       Attendez que l&apos;organisateur lance cet arrêt pour pouvoir y participer et donner votre avis ! 🍩
                     </p>
+                    {travelTimeToActive && (
+                      <div className="mt-4 pt-3 border-t border-white/10 text-xs font-bold text-[hsl(190,80%,55%)] flex items-center justify-center gap-1.5 select-none">
+                        <span>🚶 Temps de trajet estimé : {travelTimeToActive.replace('mins', 'min')} de marche</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <TastingCard key={displayPlace._id} placeId={displayPlace._id} guestName={name} isGuestView={true} />
