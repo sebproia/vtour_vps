@@ -146,8 +146,8 @@ export default function TourList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tours.map((tour) => (
               <div key={tour._id} className="relative group">
-                <Link href={tour.status === "completed" ? `/recap/${tour._id}` : `/tour/${tour._id}`} className="block">
-                  <Card className="border-2 sm:border-4 border-primary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1.5 hover:border-primary/40 bg-card">
+                <div className="block">
+                  <Card className="relative border-2 sm:border-4 border-primary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1.5 hover:border-primary/40 bg-card">
                     {/* Visual Preview Photos */}
                     <div className="relative">
                       {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
@@ -168,7 +168,7 @@ export default function TourList() {
                       
                       {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
                       {tour.status === "completed" && tour.averageScore && (
-                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none">
+                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none pointer-events-none">
                           ⭐ {tour.averageScore}
                         </div>
                       )}
@@ -176,7 +176,12 @@ export default function TourList() {
 
                     <CardHeader className="pt-4 pb-3">
                       <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
-                        {tour.name}
+                        <Link 
+                          href={tour.status === "completed" ? `/recap/${tour._id}` : `/tour/${tour._id}`}
+                          className="after:absolute after:inset-0 after:z-10 hover:underline"
+                        >
+                          {tour.name}
+                        </Link>
                       </CardTitle>
                       <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
                         <span className="text-primary font-bold">📅 {(() => {
@@ -194,7 +199,7 @@ export default function TourList() {
                     </CardHeader>
                     
                     {/* Compact actions container */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1 relative z-20" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[10px] font-black py-0.5 px-2 rounded-full border ${
                           tour.status === "live" ? "bg-red-500 text-white border-red-700 animate-pulse" :
@@ -278,7 +283,7 @@ export default function TourList() {
                       </div>
                     </div>
                   </Card>
-                </Link>
+                </div>
               </div>
             ))}
 
@@ -301,8 +306,8 @@ export default function TourList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {publicTours.map((tour) => (
               <div key={tour._id} className="relative group">
-                <Link href={`/recap/${tour._id}`} className="block">
-                  <Card className="border-2 sm:border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all bg-card">
+                <div className="block">
+                  <Card className="relative border-2 sm:border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all bg-card">
                     {/* Visual Preview Photos */}
                     <div className="relative">
                       {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
@@ -323,7 +328,7 @@ export default function TourList() {
 
                       {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
                       {tour.status === "completed" && tour.averageScore && (
-                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none">
+                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none pointer-events-none">
                           ⭐ {tour.averageScore}
                         </div>
                       )}
@@ -331,7 +336,12 @@ export default function TourList() {
 
                     <CardHeader className="pt-4 pb-3">
                       <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
-                        {tour.name}
+                        <Link 
+                          href={`/recap/${tour._id}`}
+                          className="after:absolute after:inset-0 after:z-10 hover:underline"
+                        >
+                          {tour.name}
+                        </Link>
                       </CardTitle>
                       <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
                         <span className="text-secondary font-bold">📅 {(() => {
@@ -349,7 +359,7 @@ export default function TourList() {
                     </CardHeader>
                     
                     {/* Compact actions container */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1 relative z-20" onClick={(e) => e.stopPropagation()}>
                       <span className="text-[10px] font-black py-0.5 px-2 bg-secondary/15 text-secondary-foreground rounded-full border border-secondary/20 text-[10px] font-bold">
                         PUBLIC
                       </span>
@@ -372,7 +382,7 @@ export default function TourList() {
                       </Button>
                     </div>
                   </Card>
-                </Link>
+                </div>
               </div>
             ))}
 
