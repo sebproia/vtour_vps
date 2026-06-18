@@ -29,7 +29,8 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         backgroundColor: "#fdfbf7",
       });
 
-      const { default: jsPDF } = await import("jspdf");
+      // @ts-ignore
+      const { jsPDF } = await import("jspdf/dist/jspdf.es.min.js");
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
