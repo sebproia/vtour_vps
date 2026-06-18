@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
 import ConvexClientProvider from "./ConvexClientProvider";
 import PWARegister from "@/components/PWARegister";
 import InstallBanner from "@/components/InstallBanner";
@@ -47,7 +48,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans antialiased selection:bg-primary/30 min-h-screen">
-        <ClerkProvider>
+        <ClerkProvider appearance={{ theme: shadcn }}>
           <ConvexClientProvider>
             {children}
             <PWARegister />
