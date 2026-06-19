@@ -199,7 +199,7 @@ export default function TastingCard({
   };
 
   const getAvatarConfig = (score: number) => {
-    const version = "v=3";
+    const version = "v=4";
     if (score < 3.5) return { src: `/grade-disgusted.png?${version}`, size: 155, offsetClass: "" };
     if (score < 6.0) return { src: `/grade-skeptical.png?${version}`, size: 170, offsetClass: "" };
     if (score < 7.5) return { src: `/grade-happy.png?${version}`, size: 190, offsetClass: "" };
@@ -308,7 +308,7 @@ export default function TastingCard({
               }
               onAnimationComplete={() => setShouldWiggle(false)}
               style={{ 
-                backgroundImage: "url('/donut-dial.png?v=3')",
+                backgroundImage: "url('/donut-dial.png?v=4')",
                 backgroundSize: "contain",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat"
