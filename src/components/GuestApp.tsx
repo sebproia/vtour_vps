@@ -179,7 +179,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
     const isUpcoming = tour.currentStepIndex < displayPlace.order;
 
     const handleDragEnd = (event: any, info: any) => {
-      const swipeThreshold = 50; // pixels
+      const swipeThreshold = 130; // pixels
       if (info.offset.x < -swipeThreshold) {
         // Swiped left -> Go to next stop
         if (viewIndex < places.length - 1) {
