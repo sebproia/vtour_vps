@@ -230,13 +230,42 @@ export default function TastingCard({
             onTouchEnd={(e) => e.stopPropagation()}
             style={{ touchAction: "none" }}
           >
+            {/* Subtle rotation track */}
+            <svg 
+              className={`absolute w-[248px] h-[248px] pointer-events-none select-none z-0 animate-[spin_60s_linear_infinite] ${isGuestView ? "text-white/30" : "text-primary/20"}`} 
+              viewBox="0 0 100 100"
+              style={{
+                left: "calc(50% - 124px)",
+                top: "calc(50% - 124px)"
+              }}
+            >
+              <circle 
+                cx="50" 
+                cy="50" 
+                r="47" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeDasharray="4 6" 
+              />
+            </svg>
+
             {/* Left Rotation Hint */}
             <motion.div 
-              className={`absolute -left-6 top-1/2 pointer-events-none select-none flex flex-col items-center ${isGuestView ? "text-white/50" : "text-primary/45"}`}
-              animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-46%", "-50%"] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+              className={`absolute -left-9 top-1/2 pointer-events-none select-none flex flex-col items-center ${
+                isGuestView 
+                  ? "text-white/80 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" 
+                  : "text-primary/80 drop-shadow-[0_0_8px_rgba(244,63,94,0.15)]"
+              }`}
+              style={{ y: "-50%" }}
+              animate={{ 
+                opacity: [0.4, 0.95, 0.4], 
+                y: ["-50%", "-54%", "-50%"],
+                x: [0, 4, 0]
+              }}
+              transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
             >
-              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[-20deg]">
+              <svg width="26" height="34" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[-20deg]">
                 <path d="M4 28 C 1 20, 4 10, 14 6" />
                 <path d="M8 6 L14 6 L14 12" />
               </svg>
@@ -244,11 +273,20 @@ export default function TastingCard({
 
             {/* Right Rotation Hint */}
             <motion.div 
-              className={`absolute -right-6 top-1/2 pointer-events-none select-none flex flex-col items-center ${isGuestView ? "text-white/50" : "text-primary/45"}`}
-              animate={{ opacity: [0.35, 0.75, 0.35], y: ["-50%", "-54%", "-50%"] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", delay: 1.25 }}
+              className={`absolute -right-9 top-1/2 pointer-events-none select-none flex flex-col items-center ${
+                isGuestView 
+                  ? "text-white/80 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" 
+                  : "text-primary/80 drop-shadow-[0_0_8px_rgba(244,63,94,0.15)]"
+              }`}
+              style={{ y: "-50%" }}
+              animate={{ 
+                opacity: [0.4, 0.95, 0.4], 
+                y: ["-50%", "-46%", "-50%"],
+                x: [0, -4, 0]
+              }}
+              transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut", delay: 1.1 }}
             >
-              <svg width="20" height="26" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[160deg]">
+              <svg width="26" height="34" viewBox="0 0 24 32" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-[160deg]">
                 <path d="M4 28 C 1 20, 4 10, 14 6" />
                 <path d="M8 6 L14 6 L14 12" />
               </svg>
@@ -256,7 +294,7 @@ export default function TastingCard({
 
             {/* Rotating Donut image */}
             <motion.div 
-              className="absolute inset-0 select-none pointer-events-none"
+              className="absolute inset-0 select-none pointer-events-none z-10"
               animate={
                 shouldWiggle 
                   ? { rotate: [donutRotation, donutRotation - 15, donutRotation + 12, donutRotation - 8, donutRotation + 4, donutRotation] } 
