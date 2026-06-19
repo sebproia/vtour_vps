@@ -198,7 +198,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
             <div className="relative w-full flex flex-col items-center mb-6">
               <div className="relative w-28 h-28 mx-auto animate-[spin_12s_linear_infinite]">
                 <Image 
-                  src="/donut.png" 
+                  src="/donut.png?v=3" 
                   alt="Vitour Logo" 
                   width={112}
                   height={112}

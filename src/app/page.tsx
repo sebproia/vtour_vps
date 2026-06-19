@@ -33,7 +33,7 @@ export default async function Home() {
           <div className="relative w-full flex flex-col items-center mt-4 mb-8">
             <div className="relative w-64 h-64 mx-auto animate-[spin_12s_linear_infinite]">
               <Image 
-                src="/donut.png" 
+                src="/donut.png?v=3" 
                 alt="Donut Logo" 
                 fill
                 className="object-contain scale-125 drop-shadow-2xl mix-blend-multiply contrast-125" 
@@ -79,7 +79,7 @@ export default async function Home() {
         <div className="flex justify-between items-center bg-card p-3 sm:p-4 rounded-2xl border-2 border-border shadow-md select-none">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 p-1 flex-shrink-0">
-               <Image src="/donut.png" alt="Vito" width={22} height={22} className="drop-shadow-sm mix-blend-multiply contrast-125 animate-[spin_12s_linear_infinite]" />
+               <Image src="/donut.png?v=3" alt="Vito" width={22} height={22} className="drop-shadow-sm mix-blend-multiply contrast-125 animate-[spin_12s_linear_infinite]" />
             </div>
             <h1 className={`text-2xl sm:text-3xl tracking-tight text-primary drop-shadow-sm ${shrikhand.className}`}>
               Vitour

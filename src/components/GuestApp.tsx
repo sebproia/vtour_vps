@@ -118,7 +118,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
         {/* Donut logo spinning */}
         <div className="mb-6">
           <Image 
-            src="/donut.png" 
+            src="/donut.png?v=3" 
             alt="Vitour Donut" 
             width={140} 
             height={140} 
