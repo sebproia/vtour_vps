@@ -16,20 +16,96 @@ export default function PhotoWall({ placeId, guestName }: { placeId: Id<"places"
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Compress image client-side to keep high quality but small file size (fluidity)
+  const compressImage = (file: File): Promise<Blob | File> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith("image/")) {
+        resolve(file);
+        return;
+      }
+
+      const img = document.createElement("img");
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        if (!e.target?.result) {
+          resolve(file);
+          return;
+        }
+        img.src = e.target.result as string;
+      };
+
+      img.onload = () => {
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              resolve(file);
+            }
+          },
+          "image/jpeg",
+          0.88 // Best balance: 88% quality is highly detailed but very lightweight (150-250KB)
+        );
+      };
+
+      img.onerror = () => {
+        resolve(file);
+      };
+
+      reader.onerror = () => {
+        resolve(file);
+      };
+
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     setIsUploading(true);
     try {
+      // Compress image prior to uploading (reduces raw file from ~5-10MB to ~150-250KB)
+      const fileToUpload = await compressImage(rawFile);
+
       // 1. Get short-lived upload URL
       const postUrl = await generateUploadUrl();
       
       // 2. Upload file
       const result = await fetch(postUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": fileToUpload.type },
+        body: fileToUpload,
       });
       const { storageId } = await result.json();
       
@@ -74,7 +150,16 @@ export default function PhotoWall({ placeId, guestName }: { placeId: Id<"places"
       <div className="grid grid-cols-2 gap-4">
         {photos?.map((photo) => (
           <div key={photo._id} className="relative aspect-square border-4 border-border rounded-2xl overflow-hidden shadow-sm group">
-            {photo.url && <Image src={photo.url} alt="Food photo" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />}
+            {photo.url && (
+              <Image 
+                src={photo.url} 
+                alt="Food photo" 
+                fill 
+                sizes="(max-width: 480px) 50vw, 200px"
+                quality={88}
+                className="object-cover group-hover:scale-110 transition-transform duration-500" 
+              />
+            )}
             <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
               <span className="text-white text-xs font-bold shadow-black drop-shadow-md">📸 by {photo.uploaderName}</span>
             </div>
