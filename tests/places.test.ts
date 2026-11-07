@@ -71,6 +71,7 @@ test("editing a draft place updates its location without changing identity, orde
       address: "New address",
       coordinates: { lat: 49, lng: 3 },
       openingHours: "18–22",
+      openingHoursDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       googlePlaceId: "new-google",
       adminComment: "New recommendation",
     },

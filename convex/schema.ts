@@ -26,6 +26,9 @@ export default defineSchema({
     adminComment: v.optional(v.string()),
     openingHours: v.optional(v.string()),
     googlePlaceId: v.optional(v.string()),
+    weeklyOpeningHours: v.optional(v.array(v.string())),
+    openingHoursDate: v.optional(v.string()),
+    tags: v.optional(v.array(v.union(v.literal("sweet"), v.literal("savory")))),
   }).index("by_tour", ["tourId"]),
 
   ratings: defineTable({

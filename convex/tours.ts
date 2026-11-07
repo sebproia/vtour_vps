@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { tourDay, validateDate, openingHoursForDate } from "./lib/schedule";
 
 export const getMyTours = query({
   args: { organizerId: v.optional(v.string()) },
@@ -185,6 +186,7 @@ export const duplicateTour = mutation({
       organizerId: organizerId,
       status: "draft",
       currentStepIndex: 0,
+      date: tour.date,
     });
 
     const places = await ctx.db
@@ -203,6 +205,9 @@ export const duplicateTour = mutation({
         openingHours: place.openingHours,
         googlePlaceId: place.googlePlaceId,
         description: place.description,
+        tags: place.tags,
+        weeklyOpeningHours: place.weeklyOpeningHours,
+        openingHoursDate: tourDay(tour.date),
       });
     }
 
@@ -315,9 +320,32 @@ export const importPublicTour = mutation({
         openingHours: place.openingHours,
         googlePlaceId: place.googlePlaceId,
         description: place.description,
+        tags: place.tags,
+        weeklyOpeningHours: place.weeklyOpeningHours,
+        openingHoursDate: tourDay(tour.date),
       });
     }
 
     return newTourId;
   }
+});
+
+
+export const updateTourDate = mutation({
+  args: { tourId: v.id("tours"), date: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tour = await ctx.db.get(args.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+    validateDate(args.date);
+    await ctx.db.patch(tour._id, { date: args.date });
+    const places = await ctx.db.query("places").withIndex("by_tour", q => q.eq("tourId", tour._id)).collect();
+    for (const place of places) {
+      await ctx.db.patch(place._id, {
+        openingHours: openingHoursForDate(place.weeklyOpeningHours, args.date),
+        openingHoursDate: place.weeklyOpeningHours ? args.date : undefined,
+      });
+    }
+  },
 });
