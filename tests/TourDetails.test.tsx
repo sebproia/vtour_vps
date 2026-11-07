@@ -130,7 +130,7 @@ test("opens walking directions during a live tour without pausing or advancing i
   expect(new URL(current.getAttribute("href")!).searchParams.get("destination")).toBe("48,2");
   await user.click(current);
   expect(state.mutate).not.toHaveBeenCalled();
-  expect(screen.getByRole("button", { name: "PAUSE / DRAFT" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Direct" })).toHaveAttribute("aria-pressed", "true");
 });
 
 test("last stop still offers its directions and full route without a nonexistent next stop", () => {
@@ -139,4 +139,26 @@ test("last stop still offers its directions and full route without a nonexistent
   expect(screen.getByRole("link", { name: "Itinéraire complet" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Itinéraire vers Original" })).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: /Itinéraire vers le prochain arrêt/ })).not.toBeInTheDocument();
+});
+
+
+test("switches between organization and live without a pause mutation, adds after the active stop", async () => {
+  const user = userEvent.setup();
+  state.status = "live";
+  state.mutate.mockResolvedValue(null);
+  render(<TourDetails tourId="tour-1" />);
+  await user.click(screen.getByRole("button", { name: "Organisation" }));
+  expect(screen.getByText(/Le tour continue pour les participants/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Modifier Original" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Supprimer Original" })).toBeDisabled();
+  expect(state.mutate).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Select map location" }));
+  await user.click(screen.getByRole("button", { name: "ADD TO TOUR" }));
+  expect(state.mutate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+    tourId: "tour-1", name: "New restaurant", insertAtIndex: 1,
+  }));
+  state.mutate.mockClear();
+  await user.click(screen.getByRole("button", { name: "Direct" }));
+  expect(screen.getByRole("link", { name: "Itinéraire complet" })).toBeInTheDocument();
+  expect(state.mutate).not.toHaveBeenCalled();
 });

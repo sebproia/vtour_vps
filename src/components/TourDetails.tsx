@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, Plus, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, Pause, X, Pencil, Check, Share2, ChevronLeft, ChevronRight, Navigation2, Globe, Lock } from "lucide-react";
+import { MapPin, PlusCircle, Plus, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, X, Pencil, Check, Share2, ChevronLeft, ChevronRight, Navigation2, Globe, Lock } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useLoadScript } from "@react-google-maps/api";
@@ -40,11 +40,12 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const endLiveMode = useMutation(api.places.endLiveMode);
   const optimizeRoute = useMutation(api.places.optimizeRoute);
   const reorderPlacesMutation = useMutation(api.places.reorderPlaces);
-  const pauseTour = useMutation(api.places.pauseTour);
   const deletePlace = useMutation(api.places.deletePlace);
   const renameTour = useMutation(api.tours.renameTour);
   const toggleTourPublic = useMutation(api.tours.toggleTourPublic);
 
+  const [adminView, setAdminView] = useState<"live" | "organization">("live");
+  const [organizationError, setOrganizationError] = useState("");
   const [newName, setNewName] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [newAdminComment, setNewAdminComment] = useState("");
@@ -201,6 +202,9 @@ export default function TourDetails({ tourId }: { tourId: string }) {
     setIsOptimizing(true);
     try {
       await optimizeRoute({ tourId: tId });
+      setOrganizationError("");
+    } catch {
+      setOrganizationError("Impossible d’optimiser les prochaines étapes. Vérifiez votre connexion puis réessayez.");
     } finally {
       setIsOptimizing(false);
     }
@@ -216,12 +220,18 @@ export default function TourDetails({ tourId }: { tourId: string }) {
     if (!places) return;
     if (!result.destination || result.source.index === result.destination.index) return;
     
+    if (tour?.status === "live" && (result.source.index <= tour.currentStepIndex || result.destination.index <= tour.currentStepIndex)) return;
     const items = Array.from(places);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
     
     const updates = items.map((item, index) => ({ _id: item._id, order: index }));
-    await reorderPlacesMutation({ tourId: tId, updates });
+    try {
+      await reorderPlacesMutation({ tourId: tId, updates });
+      setOrganizationError("");
+    } catch {
+      setOrganizationError("Impossible de réordonner : l’étape en cours a peut-être changé. Réessayez sur les prochaines étapes.");
+    }
   };
 
   const handleAddPlace = async () => {
@@ -234,26 +244,31 @@ export default function TourDetails({ tourId }: { tourId: string }) {
       finalInsertIndex = tour.currentStepIndex + 1;
     }
 
-    await addPlace({
-      tourId: tId,
-      name: newName,
-      address: newAddress,
-      coordinates: newCoordinate,
-      adminComment: newAdminComment.trim() || undefined,
-      openingHours: newOpeningHours || undefined,
-      googlePlaceId: newGooglePlaceId || undefined,
-      insertAtIndex: finalInsertIndex,
-    });
+    try {
+      await addPlace({
+        tourId: tId,
+        name: newName,
+        address: newAddress,
+        coordinates: newCoordinate,
+        adminComment: newAdminComment.trim() || undefined,
+        openingHours: newOpeningHours || undefined,
+        googlePlaceId: newGooglePlaceId || undefined,
+        insertAtIndex: finalInsertIndex,
+      });
     
-    setNewName("");
-    setNewAddress("");
-    setNewAdminComment("");
-    setNewCoordinate(undefined);
-    setNewOpeningHours("");
-    setNewGooglePlaceId("");
-    setInsertIndex(null);
-    setIsAddModalOpen(false);
-    setMapPickerKey(k => k + 1);
+      setNewName("");
+      setNewAddress("");
+      setNewAdminComment("");
+      setNewCoordinate(undefined);
+      setNewOpeningHours("");
+      setNewGooglePlaceId("");
+      setInsertIndex(null);
+      setIsAddModalOpen(false);
+      setMapPickerKey(k => k + 1);
+      setOrganizationError("");
+    } catch {
+      setOrganizationError("Impossible d’ajouter cet arrêt. Vérifiez la connexion et choisissez une position après l’étape en cours.");
+    }
   };
 
   if (tour === undefined || places === undefined) {
@@ -266,6 +281,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
 
   const isDraft = tour.status === "draft";
   const isLive = tour.status === "live";
+  const canOrganize = tour.status !== "completed";
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -379,21 +395,25 @@ export default function TourDetails({ tourId }: { tourId: string }) {
         </div>
       </div>
 
-      {isLive ? (
+      {isLive && (
+        <div className="space-y-3">
+          <div role="group" aria-label="Affichage organisateur" className="flex gap-2">
+            <Button aria-pressed={adminView === "live"} variant={adminView === "live" ? "default" : "outline"} className="min-h-11 rounded-xl" onClick={() => setAdminView("live")}>Direct</Button>
+            <Button aria-pressed={adminView === "organization"} variant={adminView === "organization" ? "default" : "outline"} className="min-h-11 rounded-xl" onClick={() => setAdminView("organization")}>Organisation</Button>
+          </div>
+          {adminView === "organization" && <p className="rounded-xl border border-secondary/30 bg-secondary/10 p-3 text-sm">Le tour continue pour les participants. Les étapes en cours et déjà parcourues gardent leur position ; vous pouvez organiser les prochaines étapes.</p>}
+        </div>
+      )}
+      {organizationError && <p role="alert" className="text-sm text-destructive">{organizationError}</p>}
+      {isLive && (
         // ------------------ RUN DECK VIEW ------------------
-        <div className="w-full max-w-xl mx-auto space-y-6 pb-24 animate-in fade-in duration-500">
+        <div hidden={adminView !== "live"} className="w-full max-w-xl mx-auto space-y-6 pb-24 animate-in fade-in duration-500">
           {/* Header Controls inside deck */}
           <div className="flex justify-between items-center bg-card p-4 rounded-2xl border-2 border-border shadow-md">
             <span className="text-lg font-display font-black text-primary">
               📍 RUN MODE
             </span>
-            <Button 
-              size="sm" 
-              onClick={() => pauseTour({ tourId: tId })} 
-              className="h-9 px-3 text-sm rounded-xl bg-amber-500 text-white hover:bg-amber-600 font-display font-black shadow-[0_3px_0_hsl(45,90%,35%)] hover:translate-y-0.5 transition-all cursor-pointer"
-            >
-              <Pause className="mr-1 w-3.5 h-3.5" /> PAUSE / DRAFT
-            </Button>
+
           </div>
 
           {places.length > 0 && (
@@ -637,8 +657,9 @@ export default function TourDetails({ tourId }: { tourId: string }) {
             );
           })()}
         </div>
-      ) : (
-        // ------------------ DRAFT / COMPLETED VIEW ------------------
+      )}
+      {(!isLive || adminView === "organization") && (
+        // ------------------ ORGANIZATION / COMPLETED VIEW ------------------
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column: Places List */}
           <div className="lg:col-span-2 space-y-4">
@@ -662,7 +683,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   )}
                 </div>
               )}
-              {isDraft && places.length > 2 && (
+              {canOrganize && places.length - (isLive ? tour.currentStepIndex + 1 : 0) > 2 && (
                 <Button 
                   size="sm" 
                   onClick={handleOptimize} 
@@ -687,14 +708,15 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                       {places.map((place, index) => {
                         const isCurrentStep = isLive && tour.currentStepIndex === place.order;
                         const isPassed = tour.currentStepIndex > place.order || tour.status === "completed";
-                        const isExpanded = expandedPlaceId === place._id || isCurrentStep;
+                        const isExpanded = !isLive && expandedPlaceId === place._id;
+                        const canMove = canOrganize && (!isLive || place.order > tour.currentStepIndex);
                         
                         return (
                           <div key={place._id}>
                             <Draggable 
                               draggableId={place._id} 
                               index={index}
-                              isDragDisabled={!isDraft || editingPlaceId !== null}
+                              isDragDisabled={!canMove || editingPlaceId !== null}
                             >
                               {(provided, snapshot) => (
                                 <div
@@ -703,24 +725,24 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                   style={{ ...provided.draggableProps.style }}
                                 >
                                   <Card 
-                                    className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${isDraft ? "py-0 gap-0" : ""} ${
+                                    className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${canOrganize ? "py-0 gap-0" : ""} ${
                                       isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg z-10" : 
                                       isPassed ? "border-muted bg-muted/20 opacity-70 cursor-pointer hover:opacity-100 hover:border-secondary/50" :
                                       "border-border bg-card cursor-pointer hover:border-secondary/50"
-                                    } ${snapshot.isDragging ? "shadow-2xl ring-2 ring-primary z-50" : ""} ${isDraft ? "cursor-grab active:cursor-grabbing" : ""}`}
-                                    {...(isDraft && editingPlaceId === null ? provided.dragHandleProps : {})}
+                                    } ${snapshot.isDragging ? "shadow-2xl ring-2 ring-primary z-50" : ""} ${canMove ? "cursor-grab active:cursor-grabbing" : ""}`}
+                                    {...(canMove && editingPlaceId === null ? provided.dragHandleProps : {})}
                                     onClick={() => {
-                                      if (!isDraft) {
+                                      if (!canOrganize) {
                                         setExpandedPlaceId(expandedPlaceId === place._id ? null : place._id);
                                       }
                                     }}
                                   >
-                                    <div className={`flex gap-2.5 items-start ${isDraft ? "p-2.5 sm:p-3" : "p-3 sm:p-4"}`}>
+                                    <div className={`flex gap-2.5 items-start ${canOrganize ? "p-2.5 sm:p-3" : "p-3 sm:p-4"}`}>
                                       <div className={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full border-2 font-display font-black text-base ${
                                         isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" :
                                         isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" :
                                         "bg-background text-foreground border-border"
-                                      }`} title={isDraft ? "Glisser pour réordonner" : undefined}>
+                                      }`} title={canMove ? "Glisser pour réordonner" : undefined}>
                                         {place.order + 1}
                                       </div>
                                       <div className="flex-grow min-w-0">
@@ -729,7 +751,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                             {place.name}
                                           </h4>
                                           {isPassed && !isDraft && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />}
-                                          {isDraft && editingPlaceId === null && (
+                                          {canOrganize && editingPlaceId === null && (
                                             <div className="flex flex-shrink-0 -my-1 -mr-1" onClick={(event) => event.stopPropagation()}>
                                               <Button
                                                 type="button"
@@ -748,8 +770,16 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                                 size="icon"
                                                 className="size-11 rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600"
                                                 aria-label={`Supprimer ${place.name}`}
-                                                title="Supprimer l’étape"
-                                                onClick={() => deletePlace({ placeId: place._id })}
+                                                title={canMove ? "Supprimer l’étape" : "L’étape en cours et les étapes passées sont conservées"}
+                                                disabled={!canMove}
+                                                onClick={async () => {
+                                                  try {
+                                                    await deletePlace({ placeId: place._id });
+                                                    setOrganizationError("");
+                                                  } catch {
+                                                    setOrganizationError("Impossible de supprimer cet arrêt : il est peut-être devenu actif. Actualisez le parcours.");
+                                                  }
+                                                }}
                                               >
                                                 <X className="w-4 h-4" aria-hidden="true" />
                                               </Button>
@@ -780,7 +810,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                         )}
                                       </div>
                                     </div>
-                                    {isDraft && editingPlaceId === place._id && (
+                                    {canOrganize && editingPlaceId === place._id && (
                                       <div className="border-t-2 border-primary/20 bg-primary/5 p-3 sm:p-4" onClick={(event) => event.stopPropagation()}>
                                         <PlaceEditor
                                           key={place._id}
@@ -810,7 +840,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                 <div className="absolute left-[30px] sm:left-[36px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-border/80"></div>
                                 
                                 {/* Centered timeline circle button for inserting stop */}
-                                {isDraft && (
+                                {canOrganize && (!isLive || index >= tour.currentStepIndex) && (
                                   <button
                                     onClick={() => {
                                       setInsertIndex(index + 1);
