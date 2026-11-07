@@ -10,7 +10,7 @@ Le manifeste définit explicitement l’identité et le scope `/` de l’app, ai
 
 ## Parcours de secours livré
 
-Les pages d’invitation et de récap proposent « Tu as déjà la PWA Vitour ? » hors mode installé. L’utilisateur copie le lien, ouvre Vitour depuis son icône et le colle dans le scanner. Le lien reste une URL interne validée par le scanner ; aucun schéma propriétaire ni redirection automatique hasardeuse n’est utilisé.
+Les pages d’invitation et de récap proposent « Tu as installé Vitour ? » hors mode installé. L’utilisateur copie le lien, ouvre Vitour depuis son icône et le colle dans le scanner. Le lien reste une URL interne validée par le scanner ; aucun schéma propriétaire ni redirection automatique hasardeuse n’est utilisé.
 
 L’app mémorise aussi le dernier tour consulté **dans son propre stockage**, et propose de le reprendre depuis son accueil. Les stockages du navigateur et de la PWA peuvent être séparés, notamment sur iOS : cette mémoire ne synchronise pas magiquement les deux contextes. Le copier/coller du lien ou le scan d’un QR reste alors nécessaire.
 

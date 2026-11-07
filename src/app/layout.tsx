@@ -22,14 +22,12 @@ export const viewport: Viewport = {
   themeColor: "#f24099",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
-  title: "Vitour - Your Food Tour Recap",
-  description: "Share your food journey with style. Create beautiful recaps of your food tours and share them with your friends.",
+  title: "Vitour — Tes balades gourmandes",
+  description: "Organise tes food tours, partage tes bonnes adresses et retrouve tes souvenirs de dégustation.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

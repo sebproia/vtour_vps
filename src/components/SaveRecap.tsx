@@ -166,7 +166,7 @@ export default function SaveRecap({
             href="/mes-recaps"
             className="inline-flex min-h-11 items-center font-bold text-sm underline underline-offset-2"
           >
-            Voir mes récaps et mes statistiques →
+            Ouvrir mon carnet →
           </Link>
         </div>
       )}

@@ -15,7 +15,7 @@ export default async function PersonalRecapsPage() {
           ← Accueil
         </Link>
         <header>
-          <h1 className="font-display font-black text-3xl">Mes récaps</h1>
+          <h1 className="font-display font-black text-3xl">Mon carnet</h1>
           <p className="mt-2 text-sm text-foreground/75">
             Ton carnet personnel de découvertes culinaires, construit uniquement
             à partir de tes avis enregistrés.

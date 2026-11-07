@@ -106,10 +106,10 @@ export default function InstallBanner() {
             {/* Copy */}
             <div className="flex-1 text-center sm:text-left">
               <h3 className="font-display font-bold text-lg text-foreground flex items-center justify-center sm:justify-start gap-1">
-                Installez l&apos;app Vitour
+                Vitour sur ton écran d’accueil
               </h3>
               <p className="text-muted-foreground text-sm font-sans mt-0.5 leading-relaxed">
-                Ajoutez Vitour à votre écran d&apos;accueil pour partager vos food tours en un clin d&apos;œil !
+                Retrouve tes tours plus facilement en installant l’application.
               </p>
             </div>
 
@@ -118,13 +118,13 @@ export default function InstallBanner() {
             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               <button
                 onClick={handleDismiss}
-                className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="min-h-11 px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 Plus tard
               </button>
               <button
                 onClick={handleInstallClick}
-                className="relative px-5 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold font-sans text-xs rounded-2xl flex items-center gap-1.5 transition-all shadow-[0_4px_12px_rgba(242,64,153,0.4)] active:scale-95 cursor-pointer"
+                className="relative min-h-11 px-5 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold font-sans text-xs rounded-2xl flex items-center gap-1.5 transition-all shadow-[0_4px_12px_rgba(242,64,153,0.4)] active:scale-95 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 Installer
@@ -134,7 +134,7 @@ export default function InstallBanner() {
             {/* Absolute close button on top right for mobile/easy dismiss */}
             <button
               onClick={handleDismiss}
-              className="absolute top-3 right-3 text-muted-foreground/60 hover:text-foreground p-1 rounded-full hover:bg-foreground/5 transition-colors cursor-pointer"
+              className="absolute top-1 right-1 min-h-11 min-w-11 flex items-center justify-center text-muted-foreground/60 hover:text-foreground p-1 rounded-full hover:bg-foreground/5 transition-colors cursor-pointer"
               aria-label="Fermer"
             >
               <X className="w-4 h-4" />
