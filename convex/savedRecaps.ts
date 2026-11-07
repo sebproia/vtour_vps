@@ -4,7 +4,7 @@ import {
   personalStats,
   validScore,
   type PersonalAddress,
-} from "./lib/personal-stats";
+} from "./lib/personalStats";
 
 export const save = mutation({
   args: { tourId: v.id("tours"), participantName: v.optional(v.string()) },
