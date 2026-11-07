@@ -141,6 +141,13 @@ export default function TourDetails({ tourId }: { tourId: string }) {
     return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? `&waypoints=${waypoints}` : ""}&travelmode=walking`;
   };
 
+  const getPlaceItineraryUrl = (place: { address: string; coordinates?: { lat: number; lng: number } }) => {
+    const destination = place.coordinates
+      ? `${place.coordinates.lat},${place.coordinates.lng}`
+      : place.address;
+    return `https://www.google.com/maps/dir/?${new URLSearchParams({ api: "1", destination, travelmode: "walking" })}`;
+  };
+
   // Synchroniser viewIndex avec le currentStepIndex du serveur
   useEffect(() => {
     if (tour !== undefined && tour !== null) {
@@ -389,6 +396,34 @@ export default function TourDetails({ tourId }: { tourId: string }) {
             </Button>
           </div>
 
+          {places.length > 0 && (
+            <nav aria-label="Itinéraires du tour en cours" className="flex flex-wrap gap-2">
+              <a
+                href={getFullItineraryUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-secondary bg-card px-3 text-sm font-bold hover:bg-secondary/10"
+              >
+                <Navigation className="size-4" aria-hidden="true" /> Itinéraire complet
+              </a>
+              {(() => {
+                const nextPlace = places.find(place => place.order === tour.currentStepIndex + 1);
+                return nextPlace ? (
+                  <a
+                    href={getPlaceItineraryUrl(nextPlace)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={nextPlace.name}
+                    aria-label={`Itinéraire vers le prochain arrêt : ${nextPlace.name}`}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-3 text-sm font-bold text-secondary-foreground hover:bg-secondary/90"
+                  >
+                    <Navigation2 className="size-4" aria-hidden="true" /> Prochain arrêt
+                  </a>
+                ) : null;
+              })()}
+            </nav>
+          )}
+
           {/* Progress dots & stop numbers */}
           {places.length > 0 && (
             <div className="flex flex-col gap-2 bg-card p-4 rounded-2xl border-2 border-border shadow-md">
@@ -519,17 +554,17 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                             </p>
                           )}
                         </div>
-                        {activePlace.coordinates && (
-                          <button 
-                            className="w-8 h-8 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors flex-shrink-0 cursor-pointer"
-                            onClick={() => {
-                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${activePlace.coordinates?.lat},${activePlace.coordinates?.lng}`, '_blank');
-                            }}
-                            title="Itinéraire Maps"
-                          >
-                            <Navigation2 className="w-4 h-4 fill-primary" /> 
-                          </button>
-                        )}
+                        <a
+                          href={getPlaceItineraryUrl(activePlace)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="min-h-11 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 flex items-center justify-center gap-1.5 text-foreground text-sm font-bold flex-shrink-0"
+                          aria-label={`Itinéraire vers ${activePlace.name}`}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <Navigation2 className="size-4 text-primary" aria-hidden="true" /> Itinéraire
+                        </a>
                       </div>
                       {activePlace.adminComment && (
                         <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 text-primary font-medium text-sm flex gap-2 items-start">

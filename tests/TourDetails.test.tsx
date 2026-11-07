@@ -18,7 +18,7 @@ const state = vi.hoisted(() => ({
       name: "Original",
       address: "Old address",
       order: 0,
-      coordinates: { lat: 48, lng: 2 },
+      coordinates: { lat: 48, lng: 2 } as { lat: number; lng: number } | undefined,
     },
   ],
 }));
@@ -64,6 +64,7 @@ vi.mock("next/dynamic", () => ({
 afterEach(() => {
   cleanup();
   state.status = "draft";
+  state.places = state.places.slice(0, 1);
   vi.resetAllMocks();
 });
 
@@ -107,3 +108,35 @@ test.each(["live", "completed"])(
     ).not.toBeInTheDocument();
   },
 );
+
+
+test("opens walking directions during a live tour without pausing or advancing it", async () => {
+  const user = userEvent.setup();
+  state.status = "live";
+  state.places = [...state.places, {
+    ...state.places[0], _id: "place-2", name: "Prochain restaurant", order: 1,
+    address: "25 rue de Rivoli, Paris", coordinates: undefined,
+  }];
+  render(<TourDetails tourId="tour-1" />);
+  const full = screen.getByRole("link", { name: "Itinéraire complet" });
+  expect(full).toHaveAttribute("target", "_blank");
+  await user.click(full);
+  const next = screen.getByRole("link", { name: "Itinéraire vers le prochain arrêt : Prochain restaurant" });
+  const nextUrl = new URL(next.getAttribute("href")!);
+  expect(nextUrl.searchParams.get("destination")).toBe("25 rue de Rivoli, Paris");
+  expect(nextUrl.searchParams.get("travelmode")).toBe("walking");
+  await user.click(next);
+  const current = screen.getByRole("link", { name: "Itinéraire vers Original" });
+  expect(new URL(current.getAttribute("href")!).searchParams.get("destination")).toBe("48,2");
+  await user.click(current);
+  expect(state.mutate).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "PAUSE / DRAFT" })).toBeInTheDocument();
+});
+
+test("last stop still offers its directions and full route without a nonexistent next stop", () => {
+  state.status = "live";
+  render(<TourDetails tourId="tour-1" />);
+  expect(screen.getByRole("link", { name: "Itinéraire complet" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Itinéraire vers Original" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Itinéraire vers le prochain arrêt/ })).not.toBeInTheDocument();
+});
