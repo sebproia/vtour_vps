@@ -39,6 +39,22 @@ export default defineSchema({
     comment: v.optional(v.string()),
   }).index("by_place", ["placeId"]),
 
+  savedRecaps: defineTable({
+    userId: v.string(),
+    tourId: v.id("tours"),
+    name: v.string(),
+    date: v.optional(v.string()),
+    participantName: v.optional(v.string()),
+    savedAt: v.number(),
+    places: v.array(v.object({
+      name: v.string(), address: v.string(),
+      googlePlaceId: v.optional(v.string()),
+      coordinates: v.optional(v.object({lat:v.number(),lng:v.number()})),
+      score: v.optional(v.number()), comment: v.optional(v.string()),
+      tags: v.optional(v.array(v.union(v.literal("sweet"),v.literal("savory")))),
+    })),
+  }).index("by_user",["userId"]).index("by_user_tour",["userId","tourId"]),
+
   photos: defineTable({
     placeId: v.id("places"),
     storageId: v.id("_storage"),
