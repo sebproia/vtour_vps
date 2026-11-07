@@ -53,6 +53,10 @@
 }
 
 :root {
+  /* Keep the HD Diner palette and native controls light, including installed PWAs.
+     `only` also opts out of browser automatic darkening where supported. */
+  color-scheme: only light;
+
   /* HD Diner Base */
   --background: hsl(190, 80%, 97%);
   --foreground: hsl(285, 20%, 15%);
