@@ -68,7 +68,7 @@ Ne jamais entourer un élément complet contenant des boutons, liens ou entrées
 * **Développement local Next.js** : `npm run dev`
 * **Développement Convex (Live Sync)** : `npx convex dev`
 * **Vérification de compilation locale** : `npm run build`
-* **Déploiement Backend en Production** : `npx convex deploy`
+* **Déploiement Backend en Production** : workflow GitHub Actions **Deploy Convex production** (`.github/workflows/deploy-convex.yml`), ou `npx convex deploy` depuis un environnement autorisé.
 * **Git Status / Commits** : À faire après chaque tâche aboutie.
 
 ---
@@ -76,4 +76,7 @@ Ne jamais entourer un élément complet contenant des boutons, liens ou entrées
 ## 7. Pipeline de Déploiement
 1. Le code source est hébergé sur GitHub : `git@github.com:sebproia/vtour_vps.git`.
 2. Le push sur la branche `main` déclenche automatiquement un build et déploiement de production sur **Vercel**.
-3. Avant tout push, assurez-vous que `npm run build` passe avec succès en local et que le backend Convex de production est à jour (`npx convex deploy`).
+3. Avant tout push, assurez-vous que les tests concernés et `npm run build` passent. Les branches de PR servent à la revue et ne déploient pas Convex.
+4. Pour une interface dépendant de nouvelles règles Convex, fusionnez d’abord une PR backend compatible avec l’interface actuelle, attendez le succès du workflow **Deploy Convex production**, puis fusionnez la PR frontend. Ne publiez pas seulement le frontend si le backend n’est pas prêt.
+5. Le secret `CONVEX_DEPLOY_KEY` est géré dans GitHub (secret du dépôt ou environnement `production`). Les agents déclenchent/surveillent le workflow sans lire ni extraire sa valeur. N’ajoutez pas de secret dans le dépôt ou les logs.
+6. Instructions complètes : [docs/deployment.md](docs/deployment.md).

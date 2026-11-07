@@ -1,0 +1,58 @@
+name: Deploy Convex production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'convex/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-convex.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convex-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - name: Check out the production commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test
+        run: npm test
+      - name: Check the frontend build
+        run: npm run build
+      - name: Deploy the Vitour backend
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          EXPECTED_CONVEX_DEPLOYMENT: grateful-greyhound-940
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$CONVEX_DEPLOY_KEY" ]]; then
+            echo '::error::Add CONVEX_DEPLOY_KEY as a repository secret or in the production environment.'
+            exit 1
+          fi
+          # Match the deployment used by Vitour; never print the key or deploy to another project.
+          if [[ "$CONVEX_DEPLOY_KEY" != "prod:${EXPECTED_CONVEX_DEPLOYMENT}|"* ]]; then
+            echo '::error::The key must target the production deployment used by Vitour: grateful-greyhound-940.'
+            exit 1
+          fi
+          npx --no-install convex deploy --yes --typecheck enable

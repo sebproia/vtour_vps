@@ -80,13 +80,12 @@ test("editing a draft place updates its location without changing identity, orde
 test.each([
   "anonymous",
   "other",
-  "live",
   "completed",
   "missing-place",
   "missing-tour",
 ])("rejects %s edits without modifying places", async (scenario) => {
   const { t, owner, placeId, tourId } = await setup();
-  if (scenario === "live" || scenario === "completed") {
+  if (scenario === "completed") {
     await t.run(async (ctx) => {
       await ctx.db.patch(tourId, { status: scenario });
     });
@@ -153,4 +152,56 @@ test("clears old Google metadata and recommendation when the new selection omits
   expect(place).not.toHaveProperty("googlePlaceId");
   expect(place).not.toHaveProperty("openingHours");
   expect(place).not.toHaveProperty("adminComment");
+});
+
+
+test("live place edits keep the active stop id, tour state and existing ratings", async () => {
+  const { t, owner, tourId, placeId, ratingId } = await setup();
+  await t.run(ctx => ctx.db.patch(tourId, { status: "live" }));
+  const before = await t.run(async ctx => ({ tour: await ctx.db.get(tourId), rating: await ctx.db.get(ratingId) }));
+  await owner.mutation(api.places.updatePlace, { placeId, name: "Updated", address: "Updated address", coordinates: { lat: 49, lng: 3 } });
+  expect(await t.run(async ctx => ({ tour: await ctx.db.get(tourId), rating: await ctx.db.get(ratingId) }))).toEqual(before);
+  expect((await t.run(ctx => ctx.db.get(placeId)))?.order).toBe(0);
+});
+
+test("adding and reordering future stops during live preserves the active participant context", async () => {
+  const { t, owner, tourId, placeId, secondId, ratingId } = await setup();
+  await t.run(ctx => ctx.db.patch(tourId, { status: "live" }));
+  const before = await t.run(async ctx => ({ tour: await ctx.db.get(tourId), active: await ctx.db.get(placeId), rating: await ctx.db.get(ratingId) }));
+  const addedId = await owner.mutation(api.places.addPlace, { tourId, name: "New", address: "New address", insertAtIndex: 1 });
+  expect((await t.run(ctx => ctx.db.get(secondId)))?.order).toBe(2);
+  await owner.mutation(api.places.reorderPlaces, { tourId, updates: [{ _id:placeId, order:0 }, { _id:secondId, order:1 }, { _id:addedId, order:2 }] });
+  await owner.mutation(api.places.optimizeRoute, { tourId });
+  await owner.mutation(api.places.deletePlace, { placeId: addedId });
+  expect(await t.run(async ctx => ({ tour: await ctx.db.get(tourId), active: await ctx.db.get(placeId), rating: await ctx.db.get(ratingId) }))).toEqual(before);
+});
+
+test("live mutations reject insertion, deletion or moves affecting active or past stops", async () => {
+  const { t, owner, tourId, placeId, secondId, ratingId } = await setup();
+  await t.run(ctx => ctx.db.patch(tourId, { status: "live", currentStepIndex:1 }));
+  const before = await t.run(async ctx => ({ tour:await ctx.db.get(tourId), places:await ctx.db.query("places").collect(), rating:await ctx.db.get(ratingId) }));
+  await expect(owner.mutation(api.places.addPlace, { tourId, name:"New", address:"New", insertAtIndex:0 })).rejects.toThrow();
+  for (const id of [placeId, secondId]) await expect(owner.mutation(api.places.deletePlace, { placeId:id })).rejects.toThrow();
+  await expect(owner.mutation(api.places.reorderPlaces, { tourId, updates:[{_id:placeId,order:1},{_id:secondId,order:0}] })).rejects.toThrow();
+  await owner.mutation(api.places.optimizeRoute, { tourId });
+  expect(await t.run(async ctx => ({ tour:await ctx.db.get(tourId), places:await ctx.db.query("places").collect(), rating:await ctx.db.get(ratingId) }))).toEqual(before);
+});
+
+test("a stale reorder is rejected if the organizer advanced the tour meanwhile", async () => {
+  const { t, owner, tourId, placeId, secondId } = await setup();
+  const third = await owner.mutation(api.places.addPlace, {tourId,name:"Third",address:"Third"});
+  await t.run(ctx => ctx.db.patch(tourId, {status:"live", currentStepIndex:1}));
+  await expect(owner.mutation(api.places.reorderPlaces, {tourId,updates:[{_id:placeId,order:0},{_id:secondId,order:2},{_id:third,order:1}]})).rejects.toThrow();
+  expect((await t.run(ctx=>ctx.db.get(secondId)))?.order).toBe(1);
+});
+
+test("rejects foreign-place ids, duplicated orders and incomplete reorders", async () => {
+  const { t, owner, tourId, placeId, secondId } = await setup();
+  const foreign = await t.run(async ctx => {
+    const otherTour=await ctx.db.insert("tours",{name:"Other",organizerId:"other",status:"draft",currentStepIndex:0});
+    return ctx.db.insert("places",{tourId:otherTour,name:"Foreign",address:"Elsewhere",order:0});
+  });
+  for (const updates of [ [{_id:placeId,order:0}], [{_id:placeId,order:0},{_id:secondId,order:0}], [{_id:placeId,order:0},{_id:foreign,order:1}] ]) {
+    await expect(owner.mutation(api.places.reorderPlaces, {tourId,updates})).rejects.toThrow();
+  }
 });
