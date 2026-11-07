@@ -9,13 +9,21 @@ export default function VitoSticker({
 }) {
   if (!validScore(score)) return null;
   return (
-    <Image
-      src={vitoAvatar(score).src}
-      alt={`Vito : ${score.toFixed(1)}/10`}
-      width={size}
-      height={size}
-      className="shrink-0 object-contain"
+    <span
+      aria-hidden="true"
+      className="relative inline-block shrink-0 overflow-hidden align-middle"
       style={{ width: size, height: size }}
-    />
+    >
+      <Image
+        src={vitoAvatar(score).src}
+        alt=""
+        unoptimized
+        loading="eager"
+        width={size}
+        height={size}
+        className="pointer-events-none select-none object-contain scale-[1.4]"
+        style={{ width: size, height: size }}
+      />
+    </span>
   );
 }

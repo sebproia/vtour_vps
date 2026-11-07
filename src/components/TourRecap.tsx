@@ -13,7 +13,7 @@ import { PlaceTags } from "@/components/PlaceTags";
 import { Shrikhand } from "next/font/google";
 import { useLoadScript } from "@react-google-maps/api";
 import { useWalkingTimes } from "@/hooks/useWalkingTimes";
-import { averageScore as meanRating, validScore, mapsPlaceUrl } from "@/lib/recap-summary";
+import { averageScore as meanRating, mapsPlaceUrl } from "@/lib/recap-summary";
 import RecapHighlights from "@/components/RecapHighlights";
 import VitoSticker from "@/components/VitoSticker";
 import SaveRecap from "@/components/SaveRecap";
@@ -230,21 +230,25 @@ export default function TourRecap({ tourId }: { tourId: string }) {
 
           <RecapHighlights places={recap.places} meters={travelMeters} pendingLegs={pendingLegs}/>
           {/* Place cards — photo on top, info below */}
-          <div className="space-y-3">
+          <div className="space-y-8 pt-5">
             {[...recap.places]
               .sort((a, b) => a.order - b.order)
               .map((place) => {
-                const ratedRatings = place.ratings.filter(r => validScore(r.score));
-                const averageScore = ratedRatings.length > 0
-                  ? (ratedRatings.reduce((acc, curr) => acc + (curr.score || 0), 0) / ratedRatings.length).toFixed(1)
-                  : null;
+                const score = meanRating(place.ratings);
+                const averageScore = score?.toFixed(1) ?? null;
                 const currentPhotoIndex = photoIndexes[place._id] || 0;
                 const currentPhoto = place.photos[currentPhotoIndex]?.url || place.photos[0]?.url;
                 const totalPhotos = place.photos.length;
                 const comments = getAllComments(place.ratings);
 
                 return (
-                  <div key={place._id} id={`recap-stop-${place._id}`} className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200 scroll-mt-4">
+                  <div key={place._id} id={`recap-stop-${place._id}`} className="relative scroll-mt-8">
+                    {score !== null && (
+                      <span className="pointer-events-none absolute -top-7 -right-2 z-30 rotate-12 select-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.2)]" aria-hidden="true">
+                        <VitoSticker score={score} size={88}/>
+                      </span>
+                    )}
+                    <div className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
                     {/* Photo section */}
                     {currentPhoto ? (
                       <div 
@@ -310,7 +314,6 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                         </h3>
                         {averageScore && (
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            <VitoSticker score={Number(averageScore)} size={56}/>
                             <span className="text-yellow-500 text-sm">⭐</span>
                             <span className="text-foreground font-black text-lg">{averageScore}</span>
                             <span className="text-muted-foreground text-[10px] font-bold">/10</span>
@@ -335,6 +338,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                           ))}
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
                 );
