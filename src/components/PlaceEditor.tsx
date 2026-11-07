@@ -57,7 +57,7 @@ export default function PlaceEditor({
           onClose();
         } catch {
           setError(
-            "Impossible d’enregistrer cet arrêt. Vérifiez votre connexion et que le parcours est toujours en brouillon, puis réessayez.",
+            "Impossible d’enregistrer cet arrêt. Vérifiez votre connexion et que le parcours n’est pas terminé, puis réessayez.",
           );
         } finally {
           setIsSaving(false);

@@ -34,6 +34,7 @@ export const addPlace = mutation({
     if (!identity) throw new Error("Unauthenticated");
     const tour = await ctx.db.get(args.tourId);
     if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+    if (tour.status === "completed") throw new Error("Completed tours cannot be edited");
 
     // Get current places to determine the order
     const existingPlaces = await ctx.db
@@ -45,6 +46,9 @@ export const addPlace = mutation({
     existingPlaces.sort((a, b) => a.order - b.order);
 
     const targetIndex = args.insertAtIndex !== undefined ? args.insertAtIndex : existingPlaces.length;
+
+    if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex > existingPlaces.length) throw new Error("Invalid insertion position");
+    if (tour.status === "live" && targetIndex <= tour.currentStepIndex) throw new Error("Insert after the active stop");
 
     // Shift all places at or after targetIndex
     for (const place of existingPlaces) {
@@ -84,7 +88,7 @@ export const updatePlace = mutation({
     if (!place) throw new Error("Place not found");
     const tour = await ctx.db.get(place.tourId);
     if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
-    if (tour.status !== "draft") throw new Error("Only draft tours can be edited");
+    if (tour.status === "completed") throw new Error("Completed tours cannot be edited");
 
     if (!args.name.trim() || !args.address.trim()) throw new Error("Name and address are required");
     const { lat, lng } = args.coordinates;
@@ -178,6 +182,9 @@ export const deletePlace = mutation({
 
     const tour = await ctx.db.get(place.tourId);
     if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+    if (tour.status === "completed") throw new Error("Completed tours cannot be edited");
+
+    if (tour.status === "live" && place.order <= tour.currentStepIndex) throw new Error("Active and past stops cannot be deleted");
 
     // Delete associated ratings
     const ratings = await ctx.db
@@ -220,6 +227,8 @@ export const optimizeRoute = mutation({
     const tourInfo = await ctx.db.get(args.tourId);
     if (!tourInfo || tourInfo.organizerId !== identity.subject) throw new Error("Unauthorized");
 
+    if (tourInfo.status === "completed") throw new Error("Completed tours cannot be edited");
+
     const places = await ctx.db
       .query("places")
       .withIndex("by_tour", (q) => q.eq("tourId", args.tourId))
@@ -230,8 +239,9 @@ export const optimizeRoute = mutation({
     // Trier par ordre existant pour avoir toujours le même point de départ (le 1er)
     places.sort((a, b) => a.order - b.order);
     
-    const optimized = [places[0]];
-    const unvisited = places.slice(1);
+    const lockedCount = tourInfo.status === "live" ? tourInfo.currentStepIndex + 1 : 1;
+    const optimized = places.slice(0, lockedCount);
+    const unvisited = places.slice(lockedCount);
     
     while (unvisited.length > 0) {
       const current = optimized[optimized.length - 1];
@@ -280,6 +290,16 @@ export const reorderPlaces = mutation({
     if (!identity) throw new Error("Unauthenticated");
     const tour = await ctx.db.get(args.tourId);
     if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+    if (tour.status === "completed") throw new Error("Completed tours cannot be edited");
+
+    const places = await ctx.db.query("places").withIndex("by_tour", q => q.eq("tourId", args.tourId)).collect();
+    const byId = new Map(places.map(place => [place._id, place]));
+    if (args.updates.length !== places.length || new Set(args.updates.map(update => update._id)).size !== places.length || new Set(args.updates.map(update => update.order)).size !== places.length) throw new Error("Invalid reorder");
+    for (const update of args.updates) {
+      const place = byId.get(update._id);
+      if (!place || !Number.isInteger(update.order) || update.order < 0 || update.order >= places.length) throw new Error("Invalid reorder");
+      if (tour.status === "live" && (place.order <= tour.currentStepIndex || update.order <= tour.currentStepIndex) && update.order !== place.order) throw new Error("Active and past stops cannot be moved");
+    }
 
     for (const update of args.updates) {
       await ctx.db.patch(update._id, { order: update.order });
