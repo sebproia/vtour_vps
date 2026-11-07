@@ -13,7 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as lib_personal_stats from "../lib/personal-stats.js";
+import type * as lib_personalStats from "../lib/personalStats.js";
 import type * as lib_schedule from "../lib/schedule.js";
 import type * as photos from "../photos.js";
 import type * as places from "../places.js";
@@ -30,7 +30,7 @@ import type * as tours from "../tours.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "lib/personal-stats": typeof lib_personal_stats;
+  "lib/personalStats": typeof lib_personalStats;
   "lib/schedule": typeof lib_schedule;
   photos: typeof photos;
   places: typeof places;

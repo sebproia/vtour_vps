@@ -58,6 +58,9 @@ Ne jamais entourer un élément complet contenant des boutons, liens ou entrées
   3. Donnez à la zone des boutons d'actions la classe `"relative z-20"` et ajoutez `e.stopPropagation()` sur leurs gestionnaires de clics pour isoler les clics.
   4. Appliquez `pointer-events-none` sur les badges décoratifs positionnés de manière absolue pour que les clics passent à travers vers l'overlay.
 
+### Noms des modules Convex
+Les noms de fichiers et dossiers exécutables sous `convex/` doivent utiliser des lettres, chiffres ou underscores (pas de tiret). Utiliser par exemple `personalStats.ts`.
+
 ### 🔒 Sécurité et Authentification
 * Dans le backend Convex, vérifiez toujours l'identité de l'utilisateur via `ctx.auth.getUserIdentity()`. N'accordez l'accès ou la modification d'un tour qu'à son `organizerId` correspondant (sauf si le tour est public ou s'il s'agit d'un invité soumettant une note sur un tour actif).
 * L'URL du fournisseur Clerk dans `convex/auth.config.ts` est fixée sur l'instance active du projet : `https://ethical-pheasant-58.clerk.accounts.dev`.
