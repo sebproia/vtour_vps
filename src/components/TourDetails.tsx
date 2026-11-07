@@ -668,7 +668,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                   style={{ ...provided.draggableProps.style }}
                                 >
                                   <Card 
-                                    className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${
+                                    className={`border-2 rounded-xl sm:rounded-2xl overflow-hidden transition-all relative ${isDraft ? "py-0 gap-0" : ""} ${
                                       isCurrentStep ? "border-secondary bg-secondary/10 shadow-lg z-10" : 
                                       isPassed ? "border-muted bg-muted/20 opacity-70 cursor-pointer hover:opacity-100 hover:border-secondary/50" :
                                       "border-border bg-card cursor-pointer hover:border-secondary/50"
@@ -680,69 +680,70 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                       }
                                     }}
                                   >
-                                    <div className="flex p-3 sm:p-4 gap-3 items-start">
-                                      <div className={`w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center rounded-full border-2 font-display font-black text-base sm:text-lg ${
-                                        isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" : 
-                                        isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" : 
+                                    <div className={`flex gap-2.5 items-start ${isDraft ? "p-2.5 sm:p-3" : "p-3 sm:p-4"}`}>
+                                      <div className={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full border-2 font-display font-black text-base ${
+                                        isCurrentStep ? "bg-secondary text-secondary-foreground border-secondary" :
+                                        isPassed ? "bg-muted text-muted-foreground border-muted-foreground/30" :
                                         "bg-background text-foreground border-border"
-                                      }`}>
+                                      }`} title={isDraft ? "Glisser pour réordonner" : undefined}>
                                         {place.order + 1}
                                       </div>
                                       <div className="flex-grow min-w-0">
-                                        <h4 className={`text-base sm:text-lg font-bold font-display truncate ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                                          {place.name}
-                                        </h4>
-                                        {place.adminComment && (
-                                          <p className="text-primary font-medium text-sm mt-0.5 truncate">💡 {place.adminComment}</p>
-                                        )}
-                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-                                          <p className="text-muted-foreground text-sm flex items-center gap-1 truncate">
-                                            <Navigation className="w-3 h-3 flex-shrink-0" /> {place.address}
-                                          </p>
-                                          {place.openingHours && (
-                                            <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-0.5 select-none">
-                                              🕒 {place.openingHours}
-                                            </span>
+                                        <div className="flex items-center gap-1 min-h-9">
+                                          <h4 title={place.name} className={`flex-1 min-w-0 text-base sm:text-lg font-bold font-display truncate ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                                            {place.name}
+                                          </h4>
+                                          {isPassed && !isDraft && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />}
+                                          {isDraft && editingPlaceId === null && (
+                                            <div className="flex flex-shrink-0 -my-1 -mr-1" onClick={(event) => event.stopPropagation()}>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-11 rounded-xl text-muted-foreground hover:bg-secondary/10 hover:text-foreground"
+                                                aria-label={`Modifier ${place.name}`}
+                                                title="Modifier l’étape"
+                                                onClick={() => setEditingPlaceId(place._id)}
+                                              >
+                                                <Pencil className="w-4 h-4" aria-hidden="true" />
+                                              </Button>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-11 rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600"
+                                                aria-label={`Supprimer ${place.name}`}
+                                                title="Supprimer l’étape"
+                                                onClick={() => deletePlace({ placeId: place._id })}
+                                              >
+                                                <X className="w-4 h-4" aria-hidden="true" />
+                                              </Button>
+                                            </div>
                                           )}
                                         </div>
-                                        {isDraft && editingPlaceId === null && (
-                                          <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="mt-2 h-11 rounded-xl border-2 px-3 text-sm font-bold"
-                                            aria-label={`Modifier ${place.name}`}
-                                            onClick={(event) => {
-                                              event.stopPropagation();
-                                              setEditingPlaceId(place._id);
-                                            }}
+                                        {tour.status !== "completed" && place.coordinates ? (
+                                          <a
+                                            href={`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates.lat},${place.coordinates.lng}&travelmode=walking`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 min-h-6 text-sm text-muted-foreground hover:text-primary underline decoration-dotted underline-offset-2"
+                                            aria-label={`Itinéraire vers ${place.name} : ${place.address}`}
+                                            title={place.address}
+                                            onClick={(event) => event.stopPropagation()}
                                           >
-                                            <Pencil className="w-4 h-4" aria-hidden="true" /> Modifier
-                                          </Button>
+                                            <Navigation className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                                            <span className="truncate">{place.address}</span>
+                                          </a>
+                                        ) : (
+                                          <p className="text-muted-foreground text-sm truncate" title={place.address}>{place.address}</p>
                                         )}
-                                        {tour.status !== "completed" && place.coordinates && (
-                                          <Button 
-                                            variant="outline" 
-                                            size="sm" 
-                                            className="mt-2 rounded-lg border text-xs h-7 font-bold flex items-center gap-1 cursor-pointer"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates?.lat},${place.coordinates?.lng}`, '_blank');
-                                            }}
-                                          >
-                                            <Navigation className="w-3 h-3" /> Itinéraire
-                                          </Button>
+                                        {place.adminComment && (
+                                          <p className="text-primary font-medium text-sm mt-0.5 truncate" title={place.adminComment}>💡 {place.adminComment}</p>
+                                        )}
+                                        {place.openingHours && (
+                                          <p className="text-xs text-amber-700 mt-0.5 truncate" title={place.openingHours}>🕒 {place.openingHours}</p>
                                         )}
                                       </div>
-                                      {isPassed && <CheckCircle className="w-5 h-5 text-green-500 absolute top-3 right-3 flex-shrink-0" />}
-                                      {isDraft && editingPlaceId === null && (
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); deletePlace({ placeId: place._id }); }}
-                                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all"
-                                          title="Supprimer ce stop"
-                                        >
-                                          <X className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
                                     </div>
                                     {isDraft && editingPlaceId === place._id && (
                                       <div className="border-t-2 border-primary/20 bg-primary/5 p-3 sm:p-4" onClick={(event) => event.stopPropagation()}>
