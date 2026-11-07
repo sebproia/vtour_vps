@@ -17,6 +17,7 @@ import { useLoadScript } from "@react-google-maps/api";
 const libraries: "places"[] = ["places"];
 import { useUser } from "@clerk/nextjs";
 import TastingCard from "@/components/TastingCard";
+import PlaceEditor from "@/components/PlaceEditor";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -55,6 +56,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
   const [copied, setCopied] = useState(false);
   const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null);
   const [viewIndex, setViewIndex] = useState<number>(0);
+  const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
 
   const [newOpeningHours, setNewOpeningHours] = useState("");
   const [newGooglePlaceId, setNewGooglePlaceId] = useState("");
@@ -657,7 +659,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                             <Draggable 
                               draggableId={place._id} 
                               index={index}
-                              isDragDisabled={!isDraft}
+                              isDragDisabled={!isDraft || editingPlaceId !== null}
                             >
                               {(provided, snapshot) => (
                                 <div
@@ -671,7 +673,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                       isPassed ? "border-muted bg-muted/20 opacity-70 cursor-pointer hover:opacity-100 hover:border-secondary/50" :
                                       "border-border bg-card cursor-pointer hover:border-secondary/50"
                                     } ${snapshot.isDragging ? "shadow-2xl ring-2 ring-primary z-50" : ""} ${isDraft ? "cursor-grab active:cursor-grabbing" : ""}`}
-                                    {...(isDraft ? provided.dragHandleProps : {})}
+                                    {...(isDraft && editingPlaceId === null ? provided.dragHandleProps : {})}
                                     onClick={() => {
                                       if (!isDraft) {
                                         setExpandedPlaceId(expandedPlaceId === place._id ? null : place._id);
@@ -703,6 +705,20 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                             </span>
                                           )}
                                         </div>
+                                        {isDraft && editingPlaceId === null && (
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="mt-2 h-11 rounded-xl border-2 px-3 text-sm font-bold"
+                                            aria-label={`Modifier ${place.name}`}
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              setEditingPlaceId(place._id);
+                                            }}
+                                          >
+                                            <Pencil className="w-4 h-4" aria-hidden="true" /> Modifier
+                                          </Button>
+                                        )}
                                         {tour.status !== "completed" && place.coordinates && (
                                           <Button 
                                             variant="outline" 
@@ -718,7 +734,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                         )}
                                       </div>
                                       {isPassed && <CheckCircle className="w-5 h-5 text-green-500 absolute top-3 right-3 flex-shrink-0" />}
-                                      {isDraft && (
+                                      {isDraft && editingPlaceId === null && (
                                         <button 
                                           onClick={(e) => { e.stopPropagation(); deletePlace({ placeId: place._id }); }}
                                           className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all"
@@ -728,6 +744,16 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                         </button>
                                       )}
                                     </div>
+                                    {isDraft && editingPlaceId === place._id && (
+                                      <div className="border-t-2 border-primary/20 bg-primary/5 p-3 sm:p-4" onClick={(event) => event.stopPropagation()}>
+                                        <PlaceEditor
+                                          key={place._id}
+                                          place={place}
+                                          tourDate={tour.date || undefined}
+                                          onClose={() => setEditingPlaceId(null)}
+                                        />
+                                      </div>
+                                    )}
                                     {isExpanded && (
                                       <div 
                                         className="px-3 pb-3 sm:px-4 sm:pb-4 border-t-2 border-secondary/20 pt-4 bg-secondary/5"

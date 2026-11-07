@@ -67,6 +67,43 @@ export const addPlace = mutation({
   },
 });
 
+export const updatePlace = mutation({
+  args: {
+    placeId: v.id("places"),
+    name: v.string(),
+    address: v.string(),
+    coordinates: v.object({ lat: v.number(), lng: v.number() }),
+    adminComment: v.optional(v.string()),
+    openingHours: v.optional(v.string()),
+    googlePlaceId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const place = await ctx.db.get(args.placeId);
+    if (!place) throw new Error("Place not found");
+    const tour = await ctx.db.get(place.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+    if (tour.status !== "draft") throw new Error("Only draft tours can be edited");
+
+    if (!args.name.trim() || !args.address.trim()) throw new Error("Name and address are required");
+    const { lat, lng } = args.coordinates;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      throw new Error("Invalid coordinates");
+    }
+
+    const { placeId, ...updates } = args;
+    await ctx.db.patch(placeId, {
+      ...updates,
+      name: updates.name.trim(),
+      address: updates.address.trim(),
+      adminComment: updates.adminComment?.trim() || undefined,
+      openingHours: updates.openingHours || undefined,
+      googlePlaceId: updates.googlePlaceId || undefined,
+    });
+  },
+});
+
 export const getTourInfo = query({
   args: { tourId: v.id("tours") },
   handler: async (ctx, args) => {
