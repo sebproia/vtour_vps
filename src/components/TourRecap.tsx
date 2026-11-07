@@ -61,18 +61,18 @@ export default function TourRecap({ tourId }: { tourId: string }) {
   };
 
   if (recap === undefined) {
-    return <div className="text-xl font-display font-black animate-pulse text-muted-foreground mt-12 text-center">Loading your memories... 📸</div>;
+    return <div className="text-xl font-display font-black animate-pulse text-muted-foreground mt-12 text-center">Chargement des souvenirs…</div>;
   }
   
   if (recap === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
         <div className="text-6xl">🔍</div>
-        <h2 className="text-2xl font-display font-black text-foreground">Tour not found!</h2>
-        <p className="text-base text-muted-foreground font-medium">This tour may have been deleted or the link is invalid.</p>
+        <h2 className="text-2xl font-display font-black text-foreground">Ce tour est introuvable</h2>
+        <p className="text-base text-muted-foreground font-medium">Ce tour a peut-être été supprimé ou le lien est incorrect.</p>
         <Link href="/">
           <Button className="h-12 px-6 text-lg font-display font-black bg-primary text-primary-foreground rounded-2xl hover:bg-primary/90 shadow-[0_4px_0_hsl(330,80%,40%)] hover:translate-y-1 transition-all">
-            Go to Homepage 🏠
+            Retour à l’accueil
           </Button>
         </Link>
       </div>
@@ -354,7 +354,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
           <SaveRecap tourId={recap.tour._id} participants={participants} completed={recap.tour.status==="completed"}/>
           <Link href="/" className="w-full">
             <Button size="lg" className="w-full h-12 text-base rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_4px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
-              CREATE YOUR OWN TOUR
+              Organiser mon propre tour
             </Button>
           </Link>
         </div>

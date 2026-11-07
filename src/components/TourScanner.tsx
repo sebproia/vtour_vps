@@ -56,7 +56,7 @@ export default function TourScanner() {
       } catch {
         if (cancelled) return;
         setCameraActive(false);
-        setError("Caméra inaccessible. Autorise son accès dans les réglages du navigateur ou de la PWA, ou utilise une photo du QR code ou le lien du tour ci-dessous.");
+        setError("Caméra inaccessible. Autorise son accès dans les réglages de ton téléphone, ou utilise une photo du QR code ou le lien du tour ci-dessous.");
       }
     }
     void start();

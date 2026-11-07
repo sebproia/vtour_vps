@@ -25,13 +25,14 @@ export default function ContinueInApp({ path }: { path: string }) {
         className="flex min-h-11 w-full items-center text-left text-sm font-bold"
         onClick={() => setExpanded((value) => !value)}
       >
-        📱 Tu as déjà la PWA Vitour ? {expanded ? "−" : "+"}
+        Tu as installé Vitour ? {expanded ? "−" : "+"}
       </button>
       {expanded && (
         <div className="space-y-3 pt-2">
           <p className="text-sm">
             Si ce lien s’est ouvert dans le navigateur, copie-le, ouvre Vitour
-            depuis son icône puis colle-le dans « Scanner un QR code ».
+            depuis son icône puis choisis « Rejoindre un tour » et colle le
+            lien.
           </p>
           <Button
             className="w-full min-h-11 rounded-xl"
@@ -45,10 +46,10 @@ export default function ContinueInApp({ path }: { path: string }) {
               }
             }}
           >
-            {copied ? "Lien copié ✓" : "Copier le lien pour la PWA"}
+            {copied ? "Lien copié ✓" : "Copier le lien du tour"}
           </Button>
           <input
-            aria-label="Lien à ouvrir dans la PWA"
+            aria-label="Lien du tour"
             readOnly
             value={url}
             onFocus={(event) => event.target.select()}
@@ -56,7 +57,8 @@ export default function ContinueInApp({ path }: { path: string }) {
           />
           {copied && (
             <p role="status" className="text-sm">
-              Ouvre maintenant l’app Vitour et colle le lien dans le scanner.
+              Ouvre Vitour depuis son icône, puis choisis « Rejoindre un tour »
+              et colle le lien.
             </p>
           )}
           {error && (

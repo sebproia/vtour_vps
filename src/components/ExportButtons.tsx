@@ -22,7 +22,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
     if (!element) return;
 
     setIsExporting(true);
-    setExportStatus("Generating PDF...");
+    setExportStatus("Préparation du PDF…");
     try {
       const canvas = await domToCanvas(element, { 
         scale: 2, 
@@ -50,7 +50,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         // Add explicit text link for mobile compatibility
         pdf.setFontSize(11);
         pdf.setTextColor(255, 42, 109);
-        const linkText = "View it online on Vitour";
+        const linkText = "Voir le récap sur Vitour";
         const textWidth = pdf.getStringUnitWidth(linkText) * pdf.getFontSize() / pdf.internal.scaleFactor;
         const xPos = (pageWidth - textWidth) / 2;
         const yPos = Math.min(pageHeight - 6, margin + totalImgHeightMm + 8);
@@ -82,7 +82,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
           if (page === totalPages - 1) {
             pdf.setFontSize(11);
             pdf.setTextColor(255, 42, 109);
-            const linkText = "View it online on Vitour";
+            const linkText = "Voir le récap sur Vitour";
             const textWidth = pdf.getStringUnitWidth(linkText) * pdf.getFontSize() / pdf.internal.scaleFactor;
             const xPos = (pageWidth - textWidth) / 2;
             pdf.textWithLink(linkText, xPos, pageHeight - 6, { url: window.location.href });
@@ -91,10 +91,10 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
       }
 
       pdf.save(`Food-Tour-${safeName}.pdf`);
-      setExportStatus("PDF saved! ✅");
+      setExportStatus("PDF enregistré");
     } catch (err) {
       console.error("Erreur PDF:", err);
-      setExportStatus("PDF error ❌");
+      setExportStatus("Impossible de créer le PDF");
     } finally {
       setIsExporting(false);
       setTimeout(() => setExportStatus(null), 3000);
@@ -106,7 +106,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
     if (!element) return;
 
     setIsExporting(true);
-    setExportStatus("Generating image...");
+    setExportStatus("Préparation de l’image…");
     try {
       // Use scale 1 on mobile to avoid memory issues, scale 2 on desktop
       const dataUrl = await domToPng(element, { 
@@ -123,25 +123,25 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         try {
           await navigator.share({
             title: `Food Tour: ${tourName}`,
-            text: "Check out this food tour recap!",
+            text: "Les souvenirs de notre food tour",
             files: [file],
           });
-          setExportStatus("Shared! ✅");
+          setExportStatus("Récap partagé");
         } catch (error: unknown) {
           // User cancelled share — fall back to download
           if ((error as Error)?.name !== 'AbortError') {
             downloadBlob(blob, `Food-Tour-${safeName}.png`);
-            setExportStatus("Downloaded! ✅");
+            setExportStatus("Image enregistrée");
           }
         }
       } else {
         // Fallback: direct download
         downloadBlob(blob, `Food-Tour-${safeName}.png`);
-        setExportStatus("Downloaded! ✅");
+        setExportStatus("Image enregistrée");
       }
     } catch (error) {
       console.error("Error generating image:", error);
-      setExportStatus("Error ❌");
+      setExportStatus("Impossible de créer l’image");
     } finally {
       setIsExporting(false);
       setTimeout(() => setExportStatus(null), 3000);
@@ -176,7 +176,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
           className="flex-1 h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-[0_4px_0_hsl(220,90%,30%)] hover:shadow-[0_0px_0_hsl(220,90%,30%)] hover:translate-y-1 transition-all text-sm"
         >
           {isExporting ? <Loader2 className="animate-spin w-4 h-4" /> : <ImageDown className="mr-1.5 w-4 h-4" />} 
-          Save Image
+          Enregistrer l’image
         </Button>
         <Button 
           onClick={handleExportPDF}
@@ -184,7 +184,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
           className="flex-1 h-12 rounded-2xl font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-[0_4px_0_hsl(45,90%,40%)] hover:shadow-[0_0px_0_hsl(45,90%,40%)] hover:translate-y-1 transition-all text-sm"
         >
           {isExporting ? <Loader2 className="animate-spin w-4 h-4" /> : <Download className="mr-1.5 w-4 h-4" />} 
-          Save PDF
+          Enregistrer le PDF
         </Button>
       </div>
     </div>

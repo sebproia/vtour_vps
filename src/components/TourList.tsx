@@ -2,13 +2,22 @@
 
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
-import { useState } from "react";
+import type { Id } from "../../convex/_generated/dataModel";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Copy, Download, Globe, Pencil } from "lucide-react";
+import {
+  Trash2,
+  Copy,
+  Download,
+  Globe,
+  Plus,
+  MoreHorizontal,
+  CalendarDays,
+  MapPin,
+  ArrowRight,
+} from "lucide-react";
 
 interface TourWithPhotos {
   _id: Id<"tours">;
@@ -23,378 +32,421 @@ interface TourWithPhotos {
   averageScore: number | null;
   previewPhotos: string[];
 }
+const statusLabel = {
+  draft: "En préparation",
+  live: "En cours",
+  completed: "Terminé",
+};
+function tourDate(tour: TourWithPhotos) {
+  const date = tour.date
+    ? new Date(`${tour.date}T12:00:00`)
+    : new Date(tour._creationTime);
+  return Number.isNaN(date.getTime())
+    ? "Date à préciser"
+    : date.toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+}
 
 export default function TourList() {
   const { isLoading, isAuthenticated } = useConvexAuth();
-  const tours = useQuery(api.tours.getMyTours, isAuthenticated ? {} : "skip") as TourWithPhotos[] | undefined;
-  const publicTours = useQuery(api.tours.getPublicTours, isAuthenticated ? {} : "skip") as TourWithPhotos[] | undefined;
-  
+  const tours = useQuery(
+    api.tours.getMyTours,
+    isAuthenticated ? {} : "skip",
+  ) as TourWithPhotos[] | undefined;
+  const publicTours = useQuery(
+    api.tours.getPublicTours,
+    isAuthenticated ? {} : "skip",
+  ) as TourWithPhotos[] | undefined;
   const createTour = useMutation(api.tours.createTour);
   const deleteTour = useMutation(api.tours.deleteTour);
   const duplicateTour = useMutation(api.tours.duplicateTour);
   const importPublicTour = useMutation(api.tours.importPublicTour);
   const toggleTourPublic = useMutation(api.tours.toggleTourPublic);
-
-  const [activeTab, setActiveTab] = useState<"my-tours" | "marketplace">("my-tours");
+  const [activeTab, setActiveTab] = useState<"mine" | "discover">("mine");
+  const [isCreating, setIsCreating] = useState(false);
   const [newTourName, setNewTourName] = useState("");
   const [newTourDate, setNewTourDate] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [isImporting, setIsImporting] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const handleCreate = async () => {
-    if (!newTourName.trim()) return;
-    await createTour({ name: newTourName, date: newTourDate || undefined });
-    setNewTourName("");
-    setNewTourDate("");
-    setIsCreating(false);
-  };
-
-  const handleImport = async (tourId: any) => {
-    if (confirm("Importer ce food tour ? Cela va créer une copie vierge sous votre compte afin que vous puissiez l'adapter !")) {
-      setIsImporting(tourId);
-      try {
-        const newTourId = await importPublicTour({ tourId });
-        window.location.href = `/tour/${newTourId}`;
-      } catch (error) {
-        console.error("Error importing tour:", error);
-        alert("Erreur lors de l'import : " + (error as Error).message);
-      } finally {
-        setIsImporting(null);
-      }
+  async function handleCreate(event: FormEvent) {
+    event.preventDefault();
+    if (!newTourName.trim() || busy) return;
+    setBusy("create");
+    setError("");
+    try {
+      await createTour({
+        name: newTourName.trim(),
+        date: newTourDate || undefined,
+      });
+      setNewTourName("");
+      setNewTourDate("");
+      setIsCreating(false);
+    } catch {
+      setError(
+        "Le tour n’a pas pu être créé. Tes informations sont conservées, réessaie.",
+      );
+    } finally {
+      setBusy(null);
     }
-  };
-
-  if (isLoading || !isAuthenticated || tours === undefined || publicTours === undefined) {
-    return <div className="text-xl font-bold font-display animate-pulse text-muted-foreground mt-12">Loading your tours... 🍩</div>;
+  }
+  async function runAction(
+    tourId: Id<"tours">,
+    action: () => Promise<unknown>,
+  ) {
+    if (busy) return;
+    setBusy(tourId);
+    setError("");
+    try {
+      await action();
+    } catch {
+      setError(
+        "Cette action n’a pas abouti. Vérifie ta connexion et réessaie.",
+      );
+    } finally {
+      setBusy(null);
+    }
   }
 
+  if (
+    isLoading ||
+    !isAuthenticated ||
+    tours === undefined ||
+    publicTours === undefined
+  )
+    return (
+      <p role="status" className="py-6 font-bold">
+        Chargement de tes tours…
+      </p>
+    );
+  const visibleTours = activeTab === "mine" ? tours : publicTours;
   return (
-    <div className="space-y-6 mt-6">
-      {/* Dynamic diner-style tabs */}
-      <div className="flex gap-2 p-1.5 bg-card/60 backdrop-blur-sm rounded-2xl border-2 border-border shadow-inner max-w-sm sm:max-w-md select-none">
-        <button
-          onClick={() => setActiveTab("my-tours")}
-          className={`flex-grow py-2.5 px-4 sm:px-6 text-sm font-display font-black rounded-xl transition-all cursor-pointer ${
-            activeTab === "my-tours"
-              ? "bg-primary text-primary-foreground shadow-md scale-[1.02]"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
-          }`}
-        >
-          🍩 Mes Tours
-        </button>
-        <button
-          onClick={() => setActiveTab("marketplace")}
-          className={`flex-grow py-2.5 px-4 sm:px-6 text-sm font-display font-black rounded-xl transition-all cursor-pointer ${
-            activeTab === "marketplace"
-              ? "bg-secondary text-secondary-foreground shadow-md scale-[1.02]"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
-          }`}
-        >
-          🌐 Découvrir
-        </button>
-      </div>
-
-      {activeTab === "my-tours" ? (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Create New Tour UI */}
-          {isCreating ? (
-            <Card className="border-4 border-secondary/50 rounded-[2rem] bg-secondary/10 shadow-lg">
-              <CardContent className="pt-6 flex flex-col sm:flex-row gap-4 items-end sm:items-center">
-                <div className="flex-1 space-y-1 w-full">
-                  <label className="text-xs font-bold text-muted-foreground/80 pl-1">Nom du Tour 🍔</label>
-                  <Input 
-                    autoFocus
-                    placeholder="e.g. Best Burgers in Brooklyn" 
-                    className="h-14 text-xl rounded-xl border-2 font-medium bg-card"
-                    value={newTourName}
-                    onChange={(e) => setNewTourName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                  />
-                </div>
-                <div className="w-full sm:w-56 space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground/80 pl-1">Date du Tour 📅</label>
-                  <Input 
-                    type="date"
-                    className="h-14 text-lg rounded-xl border-2 font-medium bg-card block w-full"
-                    value={newTourDate}
-                    onChange={(e) => setNewTourDate(e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto pt-5 sm:pt-0">
-                  <Button size="lg" className="h-14 px-8 text-lg font-black font-display bg-primary text-primary-foreground rounded-xl flex-grow sm:flex-grow-0 cursor-pointer" onClick={handleCreate}>
-                    Enregistrer
-                  </Button>
-                  <Button size="lg" variant="ghost" className="h-14 font-black cursor-pointer" onClick={() => setIsCreating(false)}>
-                    Annuler
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="flex justify-start">
-              <Button 
-                size="lg" 
-                onClick={() => setIsCreating(true)}
-                className="h-14 px-8 text-xl rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_6px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black"
-              >
-                + NEW TOUR
-              </Button>
-            </div>
-          )}
-
-          {/* Tours Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tours.map((tour) => (
-              <div key={tour._id} className="relative group">
-                <div className="block">
-                  <Card className="relative border-2 sm:border-4 border-primary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-1.5 hover:border-primary/40 bg-card">
-                    {/* Visual Preview Photos */}
-                    <div className="relative">
-                      {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
-                        <div className="flex gap-1.5 px-4 pt-4 select-none">
-                          {tour.previewPhotos.map((url, i) => (
-                            <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
-                              <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="px-4 pt-4 select-none">
-                          <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
-                            🍩 Pas encore de photos de dégustation
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
-                      {tour.status === "completed" && tour.averageScore && (
-                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none pointer-events-none">
-                          ⭐ {tour.averageScore}
-                        </div>
-                      )}
-                    </div>
-
-                    <CardHeader className="pt-4 pb-3">
-                      <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
-                        <Link 
-                          href={tour.status === "completed" ? `/recap/${tour._id}` : `/tour/${tour._id}`}
-                          className="after:absolute after:inset-0 after:z-10 hover:underline"
-                        >
-                          {tour.name}
-                        </Link>
-                      </CardTitle>
-                      <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
-                        <span className="text-primary font-bold">📅 {(() => {
-                          const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
-                          try {
-                            const d = new Date(dateStr);
-                            return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-                          } catch {
-                            return dateStr;
-                          }
-                        })()}</span>
-                        <span className="text-muted-foreground/60">•</span>
-                        <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    {/* Compact actions container */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1 relative z-20" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-black py-0.5 px-2 rounded-full border ${
-                          tour.status === "live" ? "bg-red-500 text-white border-red-700 animate-pulse" :
-                          tour.status === "completed" ? "bg-green-500 text-white border-green-700" :
-                          "bg-accent text-accent-foreground border-accent-foreground/10"
-                        }`}>
-                          {tour.status.toUpperCase()}
-                        </span>
-                        {tour.isPublic && (
-                          <span className="text-[9px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-900 flex items-center gap-0.5 animate-in zoom-in duration-300" title="Public sur Découvrir">
-                            <Globe className="w-2.5 h-2.5" /> PUB
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        {/* Globe (Public toggle) */}
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          className={`h-9 w-9 rounded-full border transition-all cursor-pointer ${
-                            tour.isPublic 
-                              ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                              : "border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary"
-                          }`}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            try {
-                              await toggleTourPublic({ tourId: tour._id, isPublic: !tour.isPublic });
-                            } catch (err) {
-                              console.error("Error toggling public status:", err);
-                              alert("Erreur lors de la publication : " + (err as Error).message);
-                            }
-                          }}
-                          title={tour.isPublic ? "Retirer de Découvrir (Public)" : "Publier sur Découvrir (Public)"}
-                        >
-                          <Globe className="w-3.5 h-3.5" />
-                        </Button>
-
-                        {/* pencil link */}
-                        <Link href={tour.status === "completed" ? `/recap/${tour._id}` : `/tour/${tour._id}`} title={tour.status === "completed" ? "Voir le récap" : "Gérer le tour"} onClick={(e) => e.stopPropagation()}>
-                          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors cursor-pointer">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                        </Link>
-                        
-                        {/* Duplicate */}
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          className="h-9 w-9 rounded-full border border-border hover:bg-secondary/10 hover:text-secondary-foreground hover:border-secondary transition-colors cursor-pointer"
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (confirm("Dupliquer ce tour ? (Les notes et photos ne seront pas copiées)")) {
-                              await duplicateTour({ tourId: tour._id });
-                            }
-                          }}
-                          title="Dupliquer le tour"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </Button>
-
-                        {/* Delete */}
-                        <Button 
-                          variant="destructive" 
-                          size="icon"
-                          className="h-9 w-9 rounded-full bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900 border border-transparent hover:border-red-200 dark:hover:border-red-800 transition-colors cursor-pointer"
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (confirm("Are you sure you want to delete this tour and all its memories?")) {
-                              await deleteTour({ tourId: tour._id });
-                            }
-                          }}
-                          title="Supprimer le tour"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            ))}
-
-            {tours.length === 0 && !isCreating && (
-              <div className="col-span-full text-center py-20 bg-muted/20 rounded-[3rem] border-4 border-dashed border-muted">
-                <h3 className="text-3xl font-display font-black text-muted-foreground/50">No tours yet!</h3>
-                <p className="text-xl text-muted-foreground/40 mt-2 font-medium">Click &quot;+ NEW TOUR&quot; to start your first incredible food journey.</p>
-              </div>
-            )}
-          </div>
+    <section aria-labelledby="tours-heading" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 id="tours-heading" className="font-display text-2xl font-black">
+            Tes food tours
+          </h1>
+          <p className="mt-1 text-sm text-foreground/75">
+            Prépare ta prochaine balade gourmande.
+          </p>
         </div>
-      ) : (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="bg-primary/5 p-4 rounded-2xl border-2 border-primary/10 max-w-xl text-sm text-primary font-medium flex items-start gap-2.5">
-            <span className="text-xl">💡</span>
-            <p>Découvrez tous les parcours partagés par d&apos;autres gourmets. Vous pouvez les **importer** pour créer une copie vierge à votre nom et l&apos;ajuster à votre goût !</p>
+        <Button
+          onClick={() => {
+            setActiveTab("mine");
+            setIsCreating(true);
+            setError("");
+          }}
+          className="min-h-11 rounded-xl bg-secondary text-secondary-foreground font-display font-bold shadow-[0_3px_0_hsl(190,80%,40%)] hover:bg-secondary/90"
+        >
+          <Plus className="size-4" aria-hidden="true" /> Créer un tour
+        </Button>
+      </div>
+      <div
+        role="group"
+        aria-label="Afficher les tours"
+        className="flex gap-1 rounded-xl border border-border bg-card p-1 sm:w-fit"
+      >
+        {(
+          [
+            { key: "mine", label: "Mes tours" },
+            { key: "discover", label: "Découvrir" },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            aria-pressed={activeTab === tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`min-h-11 flex-1 rounded-lg px-5 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${activeTab === tab.key ? "bg-primary text-foreground shadow-sm" : "text-foreground/75 hover:bg-primary/5"}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      {error && (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
+          {error}
+        </p>
+      )}
+      {busy && busy !== "create" && (
+        <p role="status" className="text-sm">
+          Mise à jour du tour…
+        </p>
+      )}
+      {activeTab === "mine" && isCreating && (
+        <form
+          onSubmit={handleCreate}
+          className="space-y-4 rounded-2xl border-2 border-secondary/40 bg-card p-4"
+        >
+          <h2 className="font-display text-lg font-bold">Nouveau food tour</h2>
+          <div className="grid gap-3 sm:grid-cols-[1fr_12rem]">
+            <div className="space-y-1.5">
+              <label htmlFor="new-tour-name" className="text-sm font-bold">
+                Nom du tour
+              </label>
+              <Input
+                id="new-tour-name"
+                autoFocus
+                required
+                placeholder="Ex. Les meilleurs burgers de Paris"
+                value={newTourName}
+                disabled={busy === "create"}
+                onChange={(e) => setNewTourName(e.target.value)}
+                className="min-h-11 rounded-xl bg-background text-base"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="new-tour-date" className="text-sm font-bold">
+                Date <span className="font-normal">(facultatif)</span>
+              </label>
+              <Input
+                id="new-tour-date"
+                type="date"
+                value={newTourDate}
+                disabled={busy === "create"}
+                onChange={(e) => setNewTourDate(e.target.value)}
+                className="min-h-11 min-w-0 rounded-xl bg-background text-base"
+              />
+            </div>
           </div>
-
-          {/* Public Tours Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicTours.map((tour) => (
-              <div key={tour._id} className="relative group">
-                <div className="block">
-                  <Card className="relative border-2 sm:border-4 border-secondary/20 rounded-[2rem] overflow-hidden shadow-xl hover:shadow-secondary/30 transition-all bg-card">
-                    {/* Visual Preview Photos */}
-                    <div className="relative">
-                      {tour.previewPhotos && tour.previewPhotos.length > 0 ? (
-                        <div className="flex gap-1.5 px-4 pt-4 select-none">
-                          {tour.previewPhotos.map((url, i) => (
-                            <div key={i} className="relative flex-1 aspect-[4/3] rounded-xl overflow-hidden border border-border shadow-sm">
-                              <img src={url} alt="Aperçu" className="object-cover w-full h-full" />
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="px-4 pt-4 select-none">
-                          <div className="w-full h-12 bg-muted/30 rounded-xl border border-dashed border-border/60 flex items-center justify-center text-xs font-bold text-muted-foreground/50">
-                            🍩 Pas encore de photos de dégustation
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Rating Stamp Badge (Straddling the bottom-right corner of the photos) */}
-                      {tour.status === "completed" && tour.averageScore && (
-                        <div className="absolute -bottom-3 right-6 bg-amber-400 dark:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-full text-xs font-black shadow-lg border-2 border-card flex items-center gap-1 z-20 rotate-3 transform hover:rotate-0 transition-transform duration-300 select-none pointer-events-none">
-                          ⭐ {tour.averageScore}
-                        </div>
-                      )}
-                    </div>
-
-                    <CardHeader className="pt-4 pb-3">
-                      <CardTitle className="text-xl sm:text-2xl font-bold font-display truncate">
-                        <Link 
-                          href={`/recap/${tour._id}`}
-                          className="after:absolute after:inset-0 after:z-10 hover:underline"
-                        >
-                          {tour.name}
-                        </Link>
-                      </CardTitle>
-                      <CardDescription className="text-xs font-medium flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-1">
-                        <span className="text-secondary font-bold">📅 {(() => {
-                          const dateStr = tour.date || new Date(tour._creationTime).toISOString().split('T')[0];
-                          try {
-                            const d = new Date(dateStr);
-                            return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-                          } catch {
-                            return dateStr;
-                          }
-                        })()}</span>
-                        <span className="text-muted-foreground/60">•</span>
-                        <span>{tour.stopsCount} stop{tour.stopsCount !== 1 ? "s" : ""}</span>
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    {/* Compact actions container */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border/40 px-4 pb-4 mt-1 relative z-20" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-black py-0.5 px-2 bg-secondary/15 text-secondary-foreground rounded-full border border-secondary/20 text-[10px] font-bold">
-                        PUBLIC
-                      </span>
-                      <Button 
-                        disabled={isImporting !== null}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleImport(tour._id);
-                        }}
-                        className="h-9 px-4 text-xs font-display font-black border-2 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-[0_2.5px_0_hsl(190,80%,40%)] hover:translate-y-0.5 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        {isImporting === tour._id ? (
-                          <>Importation...</>
-                        ) : (
-                          <>
-                            <Download className="w-3.5 h-3.5" /> Importer 📥
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </Card>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="submit"
+              disabled={busy !== null || !newTourName.trim()}
+              className="min-h-11 rounded-xl text-foreground"
+            >
+              {busy === "create" ? "Création…" : "Créer le tour"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy === "create"}
+              onClick={() => setIsCreating(false)}
+              className="min-h-11 rounded-xl"
+            >
+              Annuler
+            </Button>
+          </div>
+        </form>
+      )}
+      {activeTab === "discover" && (
+        <p className="text-sm leading-relaxed text-foreground/75">
+          Des parcours partagés par la communauté. Copie un tour dans ton espace
+          pour l’adapter et le vivre à ton rythme.
+        </p>
+      )}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {visibleTours.map((tour) => {
+          const mine = activeTab === "mine";
+          const href =
+            !mine || tour.status === "completed"
+              ? `/recap/${tour._id}`
+              : `/tour/${tour._id}`;
+          return (
+            <article
+              key={tour._id}
+              className="relative rounded-2xl border-2 border-primary/15 bg-card shadow-sm"
+            >
+              {tour.previewPhotos?.length > 0 && (
+                <div
+                  className="flex h-28 gap-1 overflow-hidden rounded-t-[14px]"
+                  aria-hidden="true"
+                >
+                  {tour.previewPhotos.slice(0, 3).map((url, i) => (
+                    <img
+                      key={i}
+                      src={url}
+                      alt=""
+                      loading="lazy"
+                      className="min-w-0 flex-1 object-cover"
+                    />
+                  ))}
                 </div>
+              )}
+              <div className="space-y-3 p-4">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                  <span
+                    className={`rounded-full px-2.5 py-1 ${tour.status === "live" ? "bg-primary/10 text-foreground" : "bg-secondary/10 text-foreground"}`}
+                  >
+                    {statusLabel[tour.status]}
+                  </span>
+                  {tour.isPublic && (
+                    <span className="inline-flex items-center gap-1 text-foreground/75">
+                      <Globe className="size-3.5" aria-hidden="true" />
+                      Partagé
+                    </span>
+                  )}
+                  {tour.averageScore !== null && (
+                    <span className="ml-auto text-foreground">
+                      ⭐ {tour.averageScore}/10
+                    </span>
+                  )}
+                </div>
+                <h2 className="font-display text-xl font-black leading-snug break-words">
+                  <Link
+                    href={href}
+                    className="after:absolute after:inset-0 after:z-10 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+                  >
+                    {tour.name}
+                  </Link>
+                </h2>
+                <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-foreground/75">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays className="size-4" aria-hidden="true" />
+                    {tourDate(tour)}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="size-4" aria-hidden="true" />
+                    {tour.stopsCount} adresse{tour.stopsCount !== 1 ? "s" : ""}
+                  </span>
+                </p>
               </div>
-            ))}
-
-            {publicTours.length === 0 && (
-              <div className="col-span-full text-center py-20 bg-muted/20 rounded-[3rem] border-4 border-dashed border-muted">
-                <h3 className="text-3xl font-display font-black text-muted-foreground/50">La Marketplace est vide !</h3>
-                <p className="text-xl text-muted-foreground/40 mt-2 font-medium">Soyez le premier à partager un tour public en cliquant sur &quot;Rendre Public&quot; dans l&apos;écran de gestion.</p>
+              <div
+                className="relative z-20 flex items-center justify-between gap-2 border-t border-border/60 px-3 py-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Link
+                  href={href}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-bold hover:bg-secondary/10 focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  {!mine || tour.status === "completed"
+                    ? "Voir le récap"
+                    : tour.status === "live"
+                      ? "Reprendre le tour"
+                      : "Préparer le tour"}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+                {mine ? (
+                  <details
+                    className="relative"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.currentTarget.open = false;
+                        e.currentTarget.querySelector("summary")?.focus();
+                      }
+                    }}
+                  >
+                    <summary
+                      aria-label={`Options pour ${tour.name}`}
+                      className="flex size-11 cursor-pointer list-none items-center justify-center rounded-xl border border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden"
+                    >
+                      <MoreHorizontal className="size-5" aria-hidden="true" />
+                    </summary>
+                    <div className="absolute right-0 bottom-full z-40 mb-2 w-64 max-w-[calc(100vw-3rem)] rounded-xl border-2 border-border bg-card p-1 shadow-lg">
+                      <button
+                        type="button"
+                        disabled={busy !== null}
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm hover:bg-muted disabled:opacity-50"
+                        onClick={(e) => {
+                          e.currentTarget
+                            .closest("details")
+                            ?.removeAttribute("open");
+                          void runAction(tour._id, () =>
+                            toggleTourPublic({
+                              tourId: tour._id,
+                              isPublic: !tour.isPublic,
+                            }),
+                          );
+                        }}
+                      >
+                        <Globe className="size-4" aria-hidden="true" />
+                        {tour.isPublic
+                          ? "Ne plus partager"
+                          : "Partager dans Découvrir"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy !== null}
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm hover:bg-muted disabled:opacity-50"
+                        onClick={(e) => {
+                          e.currentTarget
+                            .closest("details")
+                            ?.removeAttribute("open");
+                          if (
+                            confirm(
+                              "Créer une copie de ce tour ? Les notes et les photos ne seront pas copiées.",
+                            )
+                          )
+                            void runAction(tour._id, () =>
+                              duplicateTour({ tourId: tour._id }),
+                            );
+                        }}
+                      >
+                        <Copy className="size-4" aria-hidden="true" />
+                        Dupliquer le tour
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy !== null}
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        onClick={(e) => {
+                          e.currentTarget
+                            .closest("details")
+                            ?.removeAttribute("open");
+                          if (
+                            confirm(
+                              "Supprimer ce tour, ses notes et ses photos ? Cette action est définitive.",
+                            )
+                          )
+                            void runAction(tour._id, () =>
+                              deleteTour({ tourId: tour._id }),
+                            );
+                        }}
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                        Supprimer le tour
+                      </button>
+                    </div>
+                  </details>
+                ) : (
+                  <Button
+                    disabled={busy !== null}
+                    variant="outline"
+                    className="min-h-11 rounded-xl text-sm"
+                    onClick={() => {
+                      if (
+                        confirm(
+                          "Ajouter une copie de ce parcours à tes tours ? Ses notes et photos ne seront pas copiées.",
+                        )
+                      )
+                        void runAction(tour._id, async () => {
+                          const id = await importPublicTour({
+                            tourId: tour._id,
+                          });
+                          window.location.href = `/tour/${id}`;
+                        });
+                    }}
+                  >
+                    <Download className="size-4" aria-hidden="true" />
+                    {busy === tour._id ? "Ajout…" : "Ajouter à mes tours"}
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
+            </article>
+          );
+        })}
+      </div>
+      {visibleTours.length === 0 && (
+        <div className="rounded-2xl border-2 border-dashed border-border bg-card p-6 text-center">
+          <h2 className="font-display text-xl font-bold">
+            {activeTab === "mine"
+              ? "Ton premier tour commence ici"
+              : "Les découvertes arrivent bientôt"}
+          </h2>
+          <p className="mt-2 text-sm text-foreground/75">
+            {activeTab === "mine"
+              ? "Choisis un nom, ajoute tes adresses et invite tes amis."
+              : "Les tours partagés par la communauté apparaîtront ici."}
+          </p>
         </div>
       )}
-    </div>
+    </section>
   );
 }

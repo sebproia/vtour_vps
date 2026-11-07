@@ -11,7 +11,7 @@ export default function VitoSticker({
   return (
     <span
       aria-hidden="true"
-      className="relative inline-block shrink-0 overflow-hidden align-middle"
+      className="relative inline-block shrink-0 align-middle"
       style={{ width: size, height: size }}
     >
       <Image
@@ -21,7 +21,7 @@ export default function VitoSticker({
         loading="eager"
         width={size}
         height={size}
-        className="pointer-events-none select-none object-contain scale-[1.4]"
+        className="pointer-events-none select-none object-contain scale-[1.2]"
         style={{ width: size, height: size }}
       />
     </span>

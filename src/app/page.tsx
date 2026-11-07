@@ -8,6 +8,7 @@ import AuthSync from "@/components/AuthSync";
 import Link from "next/link";
 import { QrCode } from "lucide-react";
 import RecentTour from "@/components/RecentTour";
+import HomeNavigation from "@/components/HomeNavigation";
 
 const shrikhand = Shrikhand({
   weight: "400",
@@ -34,7 +35,7 @@ export default async function Home() {
         <div className="z-10 text-center space-y-4 p-6 md:p-10 w-full max-w-lg bg-white/10 backdrop-blur-xl rounded-[3rem] border-4 border-white/20 shadow-2xl relative">
           
           <div className="relative w-full flex flex-col items-center mt-4 mb-8">
-            <div className="relative w-64 h-64 mx-auto animate-[spin_12s_linear_infinite]">
+            <div className="relative w-64 h-64 mx-auto motion-safe:animate-[spin_12s_linear_infinite]">
               <Image 
                 src="/donut.png" 
                 alt="Donut Logo" 
@@ -58,14 +59,14 @@ export default async function Home() {
           </div>
           <SignInButton mode="modal">
             <Button size="lg" className="w-full text-xl h-16 rounded-2xl font-display font-black bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-transform hover:scale-105 shadow-[0_8px_0_hsl(190,80%,40%)] hover:shadow-[0_4px_0_hsl(190,80%,40%)] hover:translate-y-1">
-              START ORGANIZING
+              Organiser un tour
             </Button>
           </SignInButton>
           <Link href="/scan" className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-white/60 bg-white text-foreground font-display text-lg font-bold shadow-md hover:bg-white/90">
-            <QrCode className="size-5" aria-hidden="true" /> Scanner un QR code
+            <QrCode className="size-5" aria-hidden="true" /> Rejoindre un tour
           </Link>
           <RecentTour/>
-          <p className="text-sm font-medium text-white">Pour rejoindre un tour, sans compte.</p>
+          <p className="text-sm font-medium text-white">Scanne un QR code ou colle ton lien d’invitation. Sans compte.</p>
         </div>
       </div>
     );
@@ -83,25 +84,22 @@ export default async function Home() {
         }}
       />
       
-      <main className="w-full max-w-6xl mx-auto px-3 sm:px-6 pt-8 sm:pt-16 space-y-6 relative z-10">
+      <main className="w-full max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-8 space-y-4 relative z-10">
         <div className="flex justify-between items-center bg-card p-3 sm:p-4 rounded-2xl border-2 border-border shadow-md select-none">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 p-1 flex-shrink-0">
-               <Image src="/donut.png" alt="Vito" width={22} height={22} className="drop-shadow-sm mix-blend-multiply contrast-125 animate-[spin_12s_linear_infinite]" />
+               <Image src="/donut.png" alt="Vito" width={22} height={22} className="drop-shadow-sm mix-blend-multiply contrast-125" />
             </div>
-            <h1 className={`text-2xl sm:text-3xl tracking-tight text-primary drop-shadow-sm ${shrikhand.className}`}>
+            <span className={`text-2xl sm:text-3xl tracking-tight text-primary drop-shadow-sm ${shrikhand.className}`}>
               Vitour
-            </h1>
+            </span>
           </div>
           <div className="flex items-center gap-4">
             <UserButton appearance={{ elements: { userButtonAvatarBox: "w-9 h-9" } }} />
           </div>
         </div>
 
-        <Link href="/scan" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-secondary bg-card px-4 font-display font-bold text-foreground hover:bg-secondary/10">
-          <QrCode className="size-5" aria-hidden="true" /> Scanner un QR code
-        </Link>
-        <Link href="/mes-recaps" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-primary/20 bg-card px-4 font-display font-bold text-foreground hover:bg-primary/5">📖 Mes récaps et mes adresses testées</Link>
+        <HomeNavigation/>
         <RecentTour/>
         <TourList />
       </main>

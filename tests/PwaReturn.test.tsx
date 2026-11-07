@@ -36,13 +36,15 @@ test("browser handoff copies a valid same-origin invitation rather than pretendi
     .spyOn(navigator.clipboard, "writeText")
     .mockResolvedValue(undefined);
   render(<ContinueInApp path="/join/abc123" />);
-  await user.click(screen.getByRole("button", { name: /Tu as déjà la PWA/ }));
   await user.click(
-    screen.getByRole("button", { name: "Copier le lien pour la PWA" }),
+    screen.getByRole("button", { name: /Tu as installé Vitour/ }),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Copier le lien du tour" }),
   );
   expect(copy).toHaveBeenCalledWith(`${window.location.origin}/join/abc123`);
   expect(await screen.findByRole("status")).toHaveTextContent(
-    "Ouvre maintenant l’app",
+    "Ouvre Vitour depuis son icône",
   );
 });
 test("the home resume link follows the most recent tour and switches to recap on completion", () => {
