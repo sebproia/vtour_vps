@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { tourDay, validateWeek, openingHoursForDate } from "./lib/schedule";
 
 export const getPlacesByTour = query({
   args: { tourId: v.id("tours") },
@@ -27,6 +28,8 @@ export const addPlace = mutation({
     adminComment: v.optional(v.string()),
     openingHours: v.optional(v.string()),
     googlePlaceId: v.optional(v.string()),
+    weeklyOpeningHours: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.union(v.literal("sweet"), v.literal("savory")))),
     insertAtIndex: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -35,6 +38,8 @@ export const addPlace = mutation({
     const tour = await ctx.db.get(args.tourId);
     if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
     if (tour.status === "completed") throw new Error("Completed tours cannot be edited");
+
+    validateWeek(args.weeklyOpeningHours);
 
     // Get current places to determine the order
     const existingPlaces = await ctx.db
@@ -64,7 +69,10 @@ export const addPlace = mutation({
       description: args.description,
       coordinates: args.coordinates,
       adminComment: args.adminComment,
-      openingHours: args.openingHours,
+      openingHours: args.weeklyOpeningHours ? openingHoursForDate(args.weeklyOpeningHours, tourDay(tour.date)) : args.openingHours,
+      weeklyOpeningHours: args.weeklyOpeningHours,
+      openingHoursDate: args.weeklyOpeningHours || args.openingHours ? tourDay(tour.date) : undefined,
+      tags: args.tags ? [...new Set(args.tags)] : undefined,
       googlePlaceId: args.googlePlaceId,
       order: targetIndex,
     });
@@ -76,10 +84,12 @@ export const updatePlace = mutation({
     placeId: v.id("places"),
     name: v.string(),
     address: v.string(),
-    coordinates: v.object({ lat: v.number(), lng: v.number() }),
+    coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
     adminComment: v.optional(v.string()),
     openingHours: v.optional(v.string()),
     googlePlaceId: v.optional(v.string()),
+    weeklyOpeningHours: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.union(v.literal("sweet"), v.literal("savory")))),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -91,18 +101,23 @@ export const updatePlace = mutation({
     if (tour.status === "completed") throw new Error("Completed tours cannot be edited");
 
     if (!args.name.trim() || !args.address.trim()) throw new Error("Name and address are required");
-    const { lat, lng } = args.coordinates;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-      throw new Error("Invalid coordinates");
+    if (args.coordinates) {
+      const { lat, lng } = args.coordinates;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) throw new Error("Invalid coordinates");
     }
+    validateWeek(args.weeklyOpeningHours);
 
     const { placeId, ...updates } = args;
     await ctx.db.patch(placeId, {
       ...updates,
+      coordinates: updates.coordinates,
+      weeklyOpeningHours: updates.weeklyOpeningHours,
       name: updates.name.trim(),
       address: updates.address.trim(),
       adminComment: updates.adminComment?.trim() || undefined,
-      openingHours: updates.openingHours || undefined,
+      openingHours: updates.weeklyOpeningHours ? openingHoursForDate(updates.weeklyOpeningHours, tourDay(tour.date)) : updates.openingHours || undefined,
+      openingHoursDate: updates.weeklyOpeningHours || updates.openingHours ? tourDay(tour.date) : undefined,
+      tags: updates.tags ? [...new Set(updates.tags)] : place.tags,
       googlePlaceId: updates.googlePlaceId || undefined,
     });
   },
@@ -305,4 +320,25 @@ export const reorderPlaces = mutation({
       await ctx.db.patch(update._id, { order: update.order });
     }
   }
+});
+
+
+export const updateOpeningHours = mutation({
+  args: { placeId: v.id("places"), expectedDate: v.string(), googlePlaceId: v.string(), weeklyOpeningHours: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const place = await ctx.db.get(args.placeId);
+    if (!place) throw new Error("Place not found");
+    const tour = await ctx.db.get(place.tourId);
+    if (!tour || tour.organizerId !== identity.subject) throw new Error("Unauthorized");
+    // A slow Google response must not overwrite a newer date or address selection.
+    if (tourDay(tour.date) !== args.expectedDate || place.googlePlaceId !== args.googlePlaceId) return;
+    validateWeek(args.weeklyOpeningHours);
+    await ctx.db.patch(place._id, {
+      weeklyOpeningHours: args.weeklyOpeningHours,
+      openingHours: openingHoursForDate(args.weeklyOpeningHours, args.expectedDate),
+      openingHoursDate: args.expectedDate,
+    });
+  },
 });
