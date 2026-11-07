@@ -384,15 +384,9 @@ export default function TastingCard({
                 placeholder="Un mot à dire ? (Optionnel) 🌮"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!isSubmitting) {
-                      handleSubmit();
-                    }
-                  }
-                }}
-                className="w-full px-4 py-2.5 bg-transparent text-foreground font-medium focus:outline-none transition-colors text-sm resize-none overflow-y-hidden min-h-[44px] max-h-[150px] leading-relaxed"
+                aria-label="Commentaire (optionnel)"
+                enterKeyHint="enter"
+                className="w-full px-4 py-2.5 bg-transparent text-foreground font-medium focus:outline-none transition-colors text-sm resize-none overflow-y-auto min-h-[44px] max-h-[150px] leading-relaxed"
                 disabled={isSubmitting}
               />
             </div>
