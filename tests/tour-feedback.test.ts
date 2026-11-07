@@ -40,7 +40,7 @@ test("only the organizer can change date or opening hours", async()=>{
   const {t,tourId,placeId}=await setup();
   for (const client of [t,t.withIdentity({subject:"other"})]) {
     await expect(client.mutation(api.tours.updateTourDate,{tourId,date:"2026-11-11"})).rejects.toThrow();
-    await expect(client.mutation(api.places.updateOpeningHours,{placeId,expectedDate:"2026-11-09",coordinates:{lat:48,lng:2},googlePlaceId:"google-1",weeklyOpeningHours:week})).rejects.toThrow();
+    await expect(client.mutation(api.places.updateOpeningHours,{placeId,expectedDate:"2026-11-09",googlePlaceId:"google-1",weeklyOpeningHours:week})).rejects.toThrow();
   }
 });
 test("manual address edits discard stale coordinates and Google metadata without changing stop identity",async()=>{

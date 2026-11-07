@@ -71,7 +71,7 @@ export default function TastingCard({
 
           {isGuestView && (
             <div className="text-[10px] font-bold text-white/40 flex items-center justify-center gap-1 select-none pt-1 animate-pulse">
-              <span>Glissez pour naviguer</span> <span>→</span>
+              <span>Utilisez le bandeau pour changer d’étape</span> <span>→</span>
             </div>
           )}
         </div>

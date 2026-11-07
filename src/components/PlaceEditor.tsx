@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -8,6 +8,7 @@ import type { Doc } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin } from "lucide-react";
+import { TastePicker, type TasteTag } from "@/components/PlaceTags";
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
@@ -32,6 +33,11 @@ export default function PlaceEditor({
   const [openingHours, setOpeningHours] = useState(place.openingHours);
   const [googlePlaceId, setGooglePlaceId] = useState(place.googlePlaceId);
 
+  const [weeklyOpeningHours, setWeeklyOpeningHours] = useState(
+    place.weeklyOpeningHours,
+  );
+  const [tags, setTags] = useState<TasteTag[]>(place.tags || []);
+  const searchSubmit = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,9 +45,22 @@ export default function PlaceEditor({
     <form
       className="space-y-4"
       aria-label={`Modifier ${place.name}`}
+      onKeyDown={(event) => {
+        if (
+          event.key === "Enter" &&
+          event.target instanceof HTMLInputElement &&
+          event.target.dataset.mapSearch === "true"
+        ) {
+          searchSubmit.current = true;
+          setTimeout(() => {
+            searchSubmit.current = false;
+          }, 0);
+        }
+      }}
       onSubmit={async (event) => {
         event.preventDefault();
-        if (isSaving || !name.trim() || !address.trim() || !coordinates) return;
+        if (searchSubmit.current || isSaving || !name.trim() || !address.trim())
+          return;
         setIsSaving(true);
         setError("");
         try {
@@ -51,8 +70,10 @@ export default function PlaceEditor({
             address,
             coordinates,
             adminComment: adminComment.trim() || undefined,
-            openingHours,
+            openingHours: weeklyOpeningHours ? openingHours : undefined,
             googlePlaceId,
+            weeklyOpeningHours,
+            tags,
           });
           onClose();
         } catch {
@@ -78,19 +99,33 @@ export default function PlaceEditor({
             onChange={(event) => setName(event.target.value)}
           />
         </div>
+        <div className="space-y-1.5">
+          <label htmlFor={`${id}-address`} className="text-sm font-bold">
+            Adresse
+          </label>
+          <Input
+            id={`${id}-address`}
+            className="h-11 rounded-xl border-2"
+            value={address}
+            onChange={(event) => {
+              setAddress(event.target.value);
+              setCoordinates(undefined);
+              setGooglePlaceId(undefined);
+              setOpeningHours(undefined);
+              setWeeklyOpeningHours(undefined);
+            }}
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
-          Recherchez une adresse ou sélectionnez un point sur la carte pour la
-          remplacer.
+          Saisissez l’adresse directement ou choisissez un nouveau lieu sur la
+          carte.
         </p>
-        <div
-          inert={isSaving}
-          onKeyDown={(event) => {
-            // Google autocomplete uses Enter to select a result, not to save the form.
-            if (event.key === "Enter") event.preventDefault();
-          }}
-        >
+        <div inert={isSaving}>
           <MapPicker
-            initialLocation={place.coordinates}
+            key={
+              coordinates ? `${coordinates.lat},${coordinates.lng}` : "manual"
+            }
+            initialLocation={coordinates}
             tourDate={tourDate}
             onLocationSelect={(
               selectedName,
@@ -99,12 +134,14 @@ export default function PlaceEditor({
               lng,
               hours,
               placeId,
+              week,
             ) => {
               setName(selectedName);
               setAddress(selectedAddress);
               setCoordinates({ lat, lng });
               setOpeningHours(hours);
               setGooglePlaceId(placeId);
+              setWeeklyOpeningHours(week);
             }}
           />
         </div>
@@ -126,6 +163,7 @@ export default function PlaceEditor({
             onChange={(event) => setAdminComment(event.target.value)}
           />
         </div>
+        <TastePicker value={tags} onChange={setTags} />
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
@@ -143,9 +181,7 @@ export default function PlaceEditor({
           <Button
             type="submit"
             className="h-11 rounded-xl sm:flex-1"
-            disabled={
-              isSaving || !name.trim() || !address.trim() || !coordinates
-            }
+            disabled={isSaving || !name.trim() || !address.trim()}
           >
             {isSaving ? "Enregistrement…" : "Enregistrer"}
           </Button>

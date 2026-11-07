@@ -9,6 +9,7 @@ import Link from "next/link";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { PlaceTags } from "@/components/PlaceTags";
 import { Shrikhand } from "next/font/google";
 
 const shrikhand = Shrikhand({
@@ -312,6 +313,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                         )}
                       </div>
 
+                      <PlaceTags tags={place.tags} />
                       {/* Address */}
                       <p className="text-muted-foreground text-xs leading-tight">
                         {place.address}
