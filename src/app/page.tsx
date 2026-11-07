@@ -7,6 +7,7 @@ import { Shrikhand } from "next/font/google";
 import AuthSync from "@/components/AuthSync";
 import Link from "next/link";
 import { QrCode } from "lucide-react";
+import RecentTour from "@/components/RecentTour";
 
 const shrikhand = Shrikhand({
   weight: "400",
@@ -63,6 +64,7 @@ export default async function Home() {
           <Link href="/scan" className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-white/60 bg-white text-foreground font-display text-lg font-bold shadow-md hover:bg-white/90">
             <QrCode className="size-5" aria-hidden="true" /> Scanner un QR code
           </Link>
+          <RecentTour/>
           <p className="text-sm font-medium text-white">Pour rejoindre un tour, sans compte.</p>
         </div>
       </div>
@@ -99,6 +101,8 @@ export default async function Home() {
         <Link href="/scan" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-secondary bg-card px-4 font-display font-bold text-foreground hover:bg-secondary/10">
           <QrCode className="size-5" aria-hidden="true" /> Scanner un QR code
         </Link>
+        <Link href="/mes-recaps" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-primary/20 bg-card px-4 font-display font-bold text-foreground hover:bg-primary/5">📖 Mes récaps et mes adresses testées</Link>
+        <RecentTour/>
         <TourList />
       </main>
     </div>

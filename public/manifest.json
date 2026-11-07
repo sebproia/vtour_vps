@@ -26,5 +26,21 @@
       "type": "image/png",
       "purpose": "any"
     }
+  ],
+  "id": "/",
+  "scope": "/",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "shortcuts": [
+    {
+      "name": "Rejoindre un tour",
+      "short_name": "Scanner un QR",
+      "url": "/scan"
+    },
+    {
+      "name": "Mes récaps",
+      "url": "/mes-recaps"
+    }
   ]
 }

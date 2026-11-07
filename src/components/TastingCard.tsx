@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import PhotoWall from "@/components/PhotoWall";
 import { Loader2, Send } from "lucide-react";
 import { motion } from "framer-motion";
+import { vitoAvatar as getAvatarConfig } from "@/lib/recap-summary";
 
 export default function TastingCard({ 
   placeId, 
@@ -198,14 +199,6 @@ export default function TastingCard({
     setIsDragging(false);
   };
 
-  const getAvatarConfig = (score: number) => {
-    const version = "v=4";
-    if (score < 3.5) return { src: `/grade-disgusted.png?${version}`, size: 155, offsetClass: "" };
-    if (score < 6.0) return { src: `/grade-skeptical.png?${version}`, size: 170, offsetClass: "" };
-    if (score < 7.5) return { src: `/grade-happy.png?${version}`, size: 190, offsetClass: "" };
-    if (score < 9.0) return { src: `/grade-smiling.png?${version}`, size: 172, offsetClass: "" };
-    return { src: `/grade-laughing.png?${version}`, size: 200, offsetClass: "-translate-x-1" };
-  };
 
   const scoreVal = selectedScore !== null && selectedScore !== -1 ? selectedScore : 5.0;
   const donutRotation = (scoreVal - 1.0) * 40; // 40 degrees per score unit (360 / 9)

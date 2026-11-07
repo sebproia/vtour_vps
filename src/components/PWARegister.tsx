@@ -18,22 +18,20 @@ declare global {
   }
 }
 
-
 export default function PWARegister() {
   useEffect(() => {
-    // 1. Register Service Worker
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
+    // Register even when hydration happens after the window load event.
+    const register = () => {
+      if ("serviceWorker" in navigator) {
         navigator.serviceWorker
           .register("/sw.js")
-          .then((reg) => {
-            console.log("[PWA] Service Worker registered with scope:", reg.scope);
-          })
-          .catch((err) => {
-            console.error("[PWA] Service Worker registration failed:", err);
-          });
-      });
-    }
+          .catch((err) =>
+            console.error("[PWA] Service Worker registration failed:", err),
+          );
+      }
+    };
+    if (document.readyState === "complete") register();
+    else window.addEventListener("load", register, { once: true });
 
     // 2. Listen for BeforeInstallPrompt event
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -41,7 +39,7 @@ export default function PWARegister() {
       e.preventDefault();
       // Stash the event so it can be triggered later.
       window.deferredPrompt = e as BeforeInstallPromptEvent;
-      
+
       console.log("[PWA] beforeinstallprompt event captured");
       // Dispatch custom event to notify the banner
       window.dispatchEvent(new CustomEvent("pwa-installable"));
@@ -59,7 +57,11 @@ export default function PWARegister() {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("load", register);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);

@@ -1,4 +1,5 @@
 import TourRecap from "@/components/TourRecap";
+import ContinueInApp from "@/components/ContinueInApp";
 
 export default async function RecapPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +14,7 @@ export default async function RecapPage({ params }: { params: Promise<{ id: stri
         }}
       />
       <main className="relative z-10 p-6 md:p-12 max-w-4xl mx-auto h-screen overflow-y-auto">
+        <ContinueInApp path={`/join/${id}`}/>
         <TourRecap tourId={id} />
       </main>
     </div>

@@ -22,7 +22,7 @@ export function useWalkingTimes(
     key: string;
     legs: Record<string, WalkingLeg>;
   }>({ key: "", legs: {} });
-  const cache = useRef(new Map<string, number>());
+  const cache = useRef(new Map<string, { seconds: number; meters?: number }>());
   useEffect(() => {
     if (!ready) return;
     let cancelled = false;
@@ -35,7 +35,10 @@ export function useWalkingTimes(
         const pair = JSON.stringify([position(from), position(to)]);
         const hit = cache.current.get(pair);
         if (hit !== undefined) return hit;
-        async function request(): Promise<number> {
+        async function request(): Promise<{
+          seconds: number;
+          meters?: number;
+        }> {
           const response = await service.getDistanceMatrix({
             origins: [position(from)],
             destinations: [position(to)],
@@ -45,11 +48,14 @@ export function useWalkingTimes(
           const element = response.rows[0]?.elements[0];
           if (element?.status !== "OK" || !element.duration)
             throw new Error("No walking route");
-          return element.duration.value;
+          return {
+            seconds: element.duration.value,
+            meters: element.distance?.value,
+          };
         }
-        let seconds: number;
+        let distance: { seconds: number; meters?: number };
         try {
-          seconds = await request();
+          distance = await request();
         } catch (error) {
           // Transient quota/service failures are retried once, without dropping other legs.
           if (
@@ -59,12 +65,12 @@ export function useWalkingTimes(
             throw error;
           await new Promise((resolve) => setTimeout(resolve, 750));
           if (cancelled) throw error;
-          seconds = await request();
+          distance = await request();
         }
-        cache.current.set(pair, seconds);
+        cache.current.set(pair, distance);
         if (cache.current.size > 200)
           cache.current.delete(cache.current.keys().next().value!);
-        return seconds;
+        return distance;
       },
       (id, result) =>
         setState((previous) => ({
@@ -82,11 +88,17 @@ export function useWalkingTimes(
   }, [key, ready]);
   const travelTimes: Record<string, string> = {};
   const travelSeconds: Record<string, number> = {};
+  const travelMeters: Record<string, number> = {};
+  let pendingLegs = 0;
   for (const place of (places || []).slice(0, -1)) {
     const leg = state.key === key ? state.legs[place._id] : undefined;
     travelTimes[place._id] =
       leg?.text || (failed ? "Trajet indisponible" : "Calcul en cours…");
-    if (leg?.status === "ok") travelSeconds[place._id] = leg.seconds;
+    if (!leg && !failed) pendingLegs++;
+    if (leg?.status === "ok") {
+      travelSeconds[place._id] = leg.seconds;
+      if (leg.meters !== undefined) travelMeters[place._id] = leg.meters;
+    }
   }
-  return { travelTimes, travelSeconds };
+  return { travelTimes, travelSeconds, travelMeters, pendingLegs };
 }

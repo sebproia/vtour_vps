@@ -11,6 +11,12 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { PlaceTags } from "@/components/PlaceTags";
 import { Shrikhand } from "next/font/google";
+import { useLoadScript } from "@react-google-maps/api";
+import { useWalkingTimes } from "@/hooks/useWalkingTimes";
+import { averageScore as meanRating, validScore, mapsPlaceUrl } from "@/lib/recap-summary";
+import RecapHighlights from "@/components/RecapHighlights";
+import VitoSticker from "@/components/VitoSticker";
+import SaveRecap from "@/components/SaveRecap";
 
 const shrikhand = Shrikhand({
   weight: "400",
@@ -18,10 +24,15 @@ const shrikhand = Shrikhand({
   display: "swap",
 });
 
+const libraries: "places"[] = ["places"];
+
 const ExportButtons = dynamic(() => import("./ExportButtons"), { ssr: false });
 
 export default function TourRecap({ tourId }: { tourId: string }) {
   const recap = useQuery(api.tours.getTourRecap, { tourId: tourId as Id<"tours"> });
+  const {isLoaded,loadError}=useLoadScript({googleMapsApiKey:process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",libraries});
+  const route=recap?.places ? [...recap.places].sort((a,b)=>a.order-b.order) : undefined;
+  const {travelMeters,pendingLegs}=useWalkingTimes(route,isLoaded,Boolean(loadError));
   const [lightboxPhotos, setLightboxPhotos] = useState<string[] | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
   // Track which photo index is shown per place
@@ -80,17 +91,9 @@ export default function TourRecap({ tourId }: { tourId: string }) {
         year: "numeric",
       });
 
-  let totalScore = 0;
-  let scoreCount = 0;
-  recap.places.forEach(place => {
-    place.ratings.forEach(r => {
-      if (r.score !== undefined && r.score !== null) {
-        totalScore += r.score;
-        scoreCount++;
-      }
-    });
-  });
-  const globalScore = scoreCount > 0 ? (totalScore / scoreCount).toFixed(1) : null;
+  const globalValue=meanRating(recap.places.flatMap(place=>place.ratings));
+  const globalScore=globalValue?.toFixed(1) || null;
+  const participants=[...new Set(recap.places.flatMap(place=>place.ratings.map(r=>r.guestName)).filter(name=>name.trim()))].sort((a,b)=>a.localeCompare(b,"fr"));
 
   const getAllComments = (ratings: typeof recap.places[0]["ratings"]) => {
     return ratings
@@ -219,18 +222,19 @@ export default function TourRecap({ tourId }: { tourId: string }) {
               <p className="text-xs text-muted-foreground font-medium">{tourDate}</p>
               {globalScore && (
                 <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-black border border-yellow-200 shadow-sm font-display relative z-30">
-                  Global Note: ⭐ {globalScore}/10
+                  Note du groupe : ⭐ {globalScore}/10
                 </span>
               )}
             </div>
           </div>
 
+          <RecapHighlights places={recap.places} meters={travelMeters} pendingLegs={pendingLegs}/>
           {/* Place cards — photo on top, info below */}
           <div className="space-y-3">
-            {recap.places
+            {[...recap.places]
               .sort((a, b) => a.order - b.order)
               .map((place) => {
-                const ratedRatings = place.ratings.filter(r => r.score !== undefined && r.score !== null);
+                const ratedRatings = place.ratings.filter(r => validScore(r.score));
                 const averageScore = ratedRatings.length > 0
                   ? (ratedRatings.reduce((acc, curr) => acc + (curr.score || 0), 0) / ratedRatings.length).toFixed(1)
                   : null;
@@ -240,7 +244,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                 const comments = getAllComments(place.ratings);
 
                 return (
-                  <div key={place._id} className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
+                  <div key={place._id} id={`recap-stop-${place._id}`} className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200 scroll-mt-4">
                     {/* Photo section */}
                     {currentPhoto ? (
                       <div 
@@ -306,6 +310,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                         </h3>
                         {averageScore && (
                           <div className="flex items-center gap-1 flex-shrink-0">
+                            <VitoSticker score={Number(averageScore)} size={56}/>
                             <span className="text-yellow-500 text-sm">⭐</span>
                             <span className="text-foreground font-black text-lg">{averageScore}</span>
                             <span className="text-muted-foreground text-[10px] font-bold">/10</span>
@@ -319,11 +324,12 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                         {place.address}
                       </p>
 
+                      <a href={mapsPlaceUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-xs font-bold underline underline-offset-2">📍 Ouvrir l’adresse dans Maps ↗</a>
                       {/* Comments — plain text, no bubble */}
                       {comments.length > 0 && (
                         <div className="pt-1 space-y-0.5">
                           {comments.map((c, i) => (
-                            <p key={i} className="text-xs text-muted-foreground italic leading-snug">
+                            <p key={i} className="text-xs text-muted-foreground italic leading-snug whitespace-pre-wrap break-words">
                               &ldquo;{c}&rdquo;
                             </p>
                           ))}
@@ -341,6 +347,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
         <div className="flex flex-col gap-3 items-center pt-2 pb-20 px-3 w-full max-w-md mx-auto">
           <ExportButtons targetId="recap-content-area" tourName={recap.tour.name} />
 
+          <SaveRecap tourId={recap.tour._id} participants={participants} completed={recap.tour.status==="completed"}/>
           <Link href="/" className="w-full">
             <Button size="lg" className="w-full h-12 text-base rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_4px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
               CREATE YOUR OWN TOUR
