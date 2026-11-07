@@ -3,13 +3,13 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
-import { MapPin, PlusCircle, Plus, CheckCircle, Navigation, Play, FastForward, QrCode, Flag, Sparkles, Loader2, X, Pencil, Check, Share2, ChevronLeft, ChevronRight, Navigation2, Globe, Lock } from "lucide-react";
+import { MapPin, PlusCircle, Plus, CheckCircle, Navigation, Play, QrCode, Sparkles, Loader2, X, Pencil, Check, Share2, Navigation2 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useLoadScript } from "@react-google-maps/api";
@@ -18,6 +18,12 @@ const libraries: "places"[] = ["places"];
 import { useUser } from "@clerk/nextjs";
 import TastingCard from "@/components/TastingCard";
 import PlaceEditor from "@/components/PlaceEditor";
+import TourDateEditor from "@/components/TourDateEditor";
+import StepNavigation from "@/components/StepNavigation";
+import { PlaceTags, TastePicker, type TasteTag } from "@/components/PlaceTags";
+import { useWalkingTimes } from "@/hooks/useWalkingTimes";
+import { useOpeningHoursRefresh } from "@/hooks/useOpeningHoursRefresh";
+import { formatWalkingTime } from "@/lib/walking-times";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,6 +33,7 @@ const MapPicker = dynamic(() => import("@/components/MapPicker"), {
 });
 
 export default function TourDetails({ tourId }: { tourId: string }) {
+  const id = useId();
   const { user } = useUser();
   const adminName = user?.firstName || "L'Organisateur ✌️";
   const tId = tourId as Id<"tours">;
@@ -61,59 +68,22 @@ export default function TourDetails({ tourId }: { tourId: string }) {
 
   const [newOpeningHours, setNewOpeningHours] = useState("");
   const [newGooglePlaceId, setNewGooglePlaceId] = useState("");
+  const [newWeeklyOpeningHours, setNewWeeklyOpeningHours] = useState<string[] | undefined>();
+  const [newTags, setNewTags] = useState<TasteTag[]>([]);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [travelTimes, setTravelTimes] = useState<Record<string, string>>({});
-  const [travelSeconds, setTravelSeconds] = useState<Record<string, number>>({});
 
-  const { isLoaded } = useLoadScript({
+  const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
 
-  useEffect(() => {
-    if (!isLoaded || !places || places.length < 2) {
-      setTravelTimes({});
-      setTravelSeconds({});
-      return;
-    }
+  const { travelTimes, travelSeconds } = useWalkingTimes(places, isLoaded, Boolean(loadError));
+  const { hoursError, retryHours } = useOpeningHoursRefresh(places, tour?.date, isLoaded);
 
-    try {
-      const service = new google.maps.DistanceMatrixService();
-      
-      const origins = places.slice(0, -1).map(p => {
-        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
-        return p.address;
-      });
-      
-      const destinations = places.slice(1).map(p => {
-        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
-        return p.address;
-      });
-
-      service.getDistanceMatrix({
-        origins,
-        destinations,
-        travelMode: google.maps.TravelMode.WALKING,
-      }, (response, status) => {
-        if (status === "OK" && response) {
-          const times: Record<string, string> = {};
-          const seconds: Record<string, number> = {};
-          for (let i = 0; i < origins.length; i++) {
-            const element = response.rows[i]?.elements[i];
-            if (element && element.status === "OK") {
-              times[places[i]._id] = element.duration.text;
-              seconds[places[i]._id] = element.duration.value;
-            }
-          }
-          setTravelTimes(times);
-          setTravelSeconds(seconds);
-        }
-      });
-    } catch (err) {
-      console.error("Error calculating travel times:", err);
-    }
-  }, [isLoaded, places]);
+  const setManualAddress = (value: string) => {
+    setNewAddress(value);setNewCoordinate(undefined);setNewGooglePlaceId("");setNewOpeningHours("");setNewWeeklyOpeningHours(undefined);
+  };
 
   const getFullItineraryUrl = () => {
     if (!places || places.length === 0) return "";
@@ -158,15 +128,9 @@ export default function TourDetails({ tourId }: { tourId: string }) {
 
   const getTotalTravelTime = () => {
     const totalSeconds = Object.values(travelSeconds).reduce((sum, s) => sum + s, 0);
-    if (totalSeconds === 0) return "";
+    if (Object.keys(travelSeconds).length === 0) return "";
     
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.round((totalSeconds % 3600) / 60);
-    
-    if (hours > 0) {
-      return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
-    }
-    return `${minutes} min`;
+    return formatWalkingTime(totalSeconds);
   };
 
   const handleShare = async () => {
@@ -253,6 +217,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
         adminComment: newAdminComment.trim() || undefined,
         openingHours: newOpeningHours || undefined,
         googlePlaceId: newGooglePlaceId || undefined,
+        weeklyOpeningHours: newWeeklyOpeningHours,
+        tags: newTags,
         insertAtIndex: finalInsertIndex,
       });
     
@@ -262,6 +228,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
       setNewCoordinate(undefined);
       setNewOpeningHours("");
       setNewGooglePlaceId("");
+      setNewWeeklyOpeningHours(undefined);
+      setNewTags([]);
       setInsertIndex(null);
       setIsAddModalOpen(false);
       setMapPickerKey(k => k + 1);
@@ -325,9 +293,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               }`}>
                 {tour.status.toUpperCase()}
               </span>
-              <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-0.5 rounded-full border border-primary/20">
-                📅 {new Date(tour.date || tour._creationTime).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
-              </span>
+              <TourDateEditor tourId={tId} date={tour.date} />
               <span className="text-sm font-medium text-muted-foreground">{places.length} stops</span>
             </div>
           </div>
@@ -404,6 +370,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           {adminView === "organization" && <p className="rounded-xl border border-secondary/30 bg-secondary/10 p-3 text-sm">Le tour continue pour les participants. Les étapes en cours et déjà parcourues gardent leur position ; vous pouvez organiser les prochaines étapes.</p>}
         </div>
       )}
+      {hoursError && <div role="alert" className="text-sm text-red-700">{hoursError} <button type="button" className="min-h-11 px-2 underline" onClick={retryHours}>Réessayer les horaires</button></div>}
       {organizationError && <p role="alert" className="text-sm text-destructive">{organizationError}</p>}
       {isLive && (
         // ------------------ RUN DECK VIEW ------------------
@@ -453,24 +420,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   Stop {viewIndex + 1} / {places.length}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {places.map((p, idx) => (
-                  <button
-                    key={p._id}
-                    onClick={() => setViewIndex(idx)}
-                    className={`h-3 rounded-full transition-all duration-300 ${
-                      idx === viewIndex 
-                        ? "w-10 bg-primary shadow-sm" 
-                        : idx === tour.currentStepIndex
-                        ? "w-3 bg-secondary animate-pulse"
-                        : idx < tour.currentStepIndex
-                        ? "w-3 bg-green-500"
-                        : "w-3 bg-muted hover:bg-muted-foreground/30"
-                    }`}
-                    title={`Aller au stop ${idx + 1}`}
-                  />
-                ))}
-              </div>
+              <StepNavigation index={viewIndex} count={places.length} onChange={setViewIndex} />
               {viewIndex < places.length - 1 && travelTimes[places[viewIndex]._id] && (
                 <div className="text-[11px] font-bold text-primary flex items-center gap-1 mt-1 pt-2 border-t border-border/40 select-none">
                   <span>🚶 prochain arrêt : {travelTimes[places[viewIndex]._id].replace('mins', 'min')}</span>
@@ -488,59 +438,16 @@ export default function TourDetails({ tourId }: { tourId: string }) {
             const isPassed = tour.currentStepIndex > activePlace.order;
             const isUpcoming = tour.currentStepIndex < activePlace.order;
 
-            const handleDragEnd = (event: any, info: any) => {
-              const swipeThreshold = 130; // pixels
-              if (info.offset.x < -swipeThreshold) {
-                // Swiped left -> Go to next stop
-                if (viewIndex < places.length - 1) {
-                  setViewIndex(viewIndex + 1);
-                }
-              } else if (info.offset.x > swipeThreshold) {
-                // Swiped right -> Go to previous stop
-                if (viewIndex > 0) {
-                  setViewIndex(viewIndex - 1);
-                }
-              }
-            };
-
             return (
               <div className="relative overflow-visible min-h-[400px]">
-                {/* Visual swipe arrows on sides (only on desktop/hover) */}
-                <div className="absolute top-1/2 -left-12 -translate-y-1/2 hidden md:block">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    disabled={viewIndex === 0}
-                    onClick={() => setViewIndex(viewIndex - 1)}
-                    className="w-10 h-10 rounded-full bg-card shadow-md border-2 hover:bg-muted"
-                  >
-                    <ChevronLeft className="w-6 h-6 text-foreground" />
-                  </Button>
-                </div>
-                <div className="absolute top-1/2 -right-12 -translate-y-1/2 hidden md:block">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    disabled={viewIndex === places.length - 1}
-                    onClick={() => setViewIndex(viewIndex + 1)}
-                    className="w-10 h-10 rounded-full bg-card shadow-md border-2 hover:bg-muted"
-                  >
-                    <ChevronRight className="w-6 h-6 text-foreground" />
-                  </Button>
-                </div>
-
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={viewIndex}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.6}
-                    onDragEnd={handleDragEnd}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="bg-card border-4 border-primary/20 rounded-[2.5rem] p-4 sm:p-6 shadow-2xl space-y-4 touch-none cursor-grab active:cursor-grabbing relative overflow-hidden"
+                    className="bg-card border-4 border-primary/20 rounded-[2.5rem] p-4 sm:p-6 shadow-2xl space-y-4 touch-pan-y relative overflow-hidden"
                   >
                     {/* Top status bar of card */}
                     <div className="flex justify-between items-center pb-2 border-b-2 border-border/50">
@@ -586,6 +493,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                           <Navigation2 className="size-4 text-primary" aria-hidden="true" /> Itinéraire
                         </a>
                       </div>
+                      <PlaceTags tags={activePlace.tags} />
                       {activePlace.adminComment && (
                         <div className="bg-primary/5 p-3 rounded-xl border border-primary/10 text-primary font-medium text-sm flex gap-2 items-start">
                           <span>💡</span>
@@ -648,11 +556,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Left/Right swipe indicators for mobile */}
-                <div className="flex justify-between items-center text-[10px] text-muted-foreground/60 px-4 pt-3 select-none">
-                  <span>← Glisser pour reculer</span>
-                  <span>Glisser pour avancer →</span>
-                </div>
+
               </div>
             );
           })()}
@@ -678,7 +582,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   </Button>
                   {getTotalTravelTime() && (
                     <span className="text-[11px] font-bold text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-lg border border-border select-none flex items-center gap-1">
-                      🚶 {getTotalTravelTime()}
+                      🚶 {getTotalTravelTime()}{Object.keys(travelSeconds).length < places.length - 1 ? " (partiel)" : ""}
                     </span>
                   )}
                 </div>
@@ -750,6 +654,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                           <h4 title={place.name} className={`flex-1 min-w-0 text-base sm:text-lg font-bold font-display truncate ${isPassed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                                             {place.name}
                                           </h4>
+                                          <PlaceTags tags={place.tags} compact />
                                           {isPassed && !isDraft && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />}
                                           {canOrganize && editingPlaceId === null && (
                                             <div className="flex flex-shrink-0 -my-1 -mr-1" onClick={(event) => event.stopPropagation()}>
@@ -856,7 +761,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                                 {/* Walking distance tag next to the timeline */}
                                 {travelTimes[place._id] && (
                                   <span className="ml-2 flex items-center gap-1 bg-muted/70 px-2.5 py-0.5 rounded-full border border-border/60 text-[10px] font-bold text-muted-foreground shadow-sm">
-                                    🚶 {travelTimes[place._id]} de marche
+                                    🚶 {Number.isFinite(travelSeconds[place._id]) ? `${travelTimes[place._id]} de marche` : travelTimes[place._id]}{travelSeconds[place._id] > 14400 ? " · Vérifier l’adresse" : ""}
                                   </span>
                                 )}
                               </div>
@@ -897,18 +802,23 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                     disabled={tour.status === "completed"}
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label htmlFor={`${id}-address`} className="text-sm font-bold">Adresse</label>
+                  <Input id={`${id}-address`} value={newAddress} disabled={!canOrganize} onChange={event=>setManualAddress(event.target.value)} placeholder="Adresse du restaurant" className="h-11 rounded-xl border-2"/>
+                </div>
                 <div className="space-y-3">
-                  <label className="text-sm font-bold font-display">Pin the Location</label>
+                  <label className="text-sm font-bold font-display">Rechercher sur la carte</label>
                   {tour.status !== "completed" ? (
                     <MapPicker 
                       key={mapPickerKey}
                       tourDate={tour.date || undefined}
-                      onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId) => {
+                      onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId, weeklyOpeningHours) => {
                         setNewName(nameFromMap);
                         setNewAddress(addr);
                         setNewCoordinate({ lat, lng });
                         setNewOpeningHours(openingHours || "");
                         setNewGooglePlaceId(googlePlaceId || "");
+                    setNewWeeklyOpeningHours(weeklyOpeningHours);
                       }} 
                     />
                   ) : (
@@ -940,7 +850,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                     </div>
                   )}
                 </div>
-                <Button 
+                <TastePicker value={newTags} onChange={setNewTags} disabled={!canOrganize} />
+                <Button
                   onClick={handleAddPlace} 
                   className="w-full h-10 text-base rounded-lg font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all cursor-pointer"
                   disabled={tour.status === "completed" || !newName.trim() || !newAddress.trim()}
@@ -965,6 +876,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           setNewCoordinate(undefined);
           setNewOpeningHours("");
           setNewGooglePlaceId("");
+          setNewWeeklyOpeningHours(undefined);
+          setNewTags([]);
         }
       }}>
         <DialogContent className="w-[95vw] sm:max-w-md mx-auto border-4 border-primary/20 rounded-[2rem] bg-card p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
@@ -983,18 +896,23 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                 onChange={(e) => setNewName(e.target.value)}
               />
             </div>
+            <div className="space-y-1.5">
+              <label htmlFor={`${id}-inline-address`} className="text-sm font-bold">Adresse</label>
+              <Input id={`${id}-inline-address`} value={newAddress} onChange={event=>setManualAddress(event.target.value)} placeholder="Adresse du restaurant" className="h-11 rounded-xl border-2"/>
+            </div>
             <div className="space-y-3">
-              <label className="text-sm font-bold font-display">Localiser l&apos;adresse</label>
+              <label className="text-sm font-bold font-display">Rechercher sur la carte</label>
               {isLoaded ? (
                 <MapPicker 
                   key={`inline-picker-${insertIndex}`}
                   tourDate={tour.date || undefined}
-                  onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId) => {
+                  onLocationSelect={(nameFromMap, addr, lat, lng, openingHours, googlePlaceId, weeklyOpeningHours) => {
                     setNewName(nameFromMap);
                     setNewAddress(addr);
                     setNewCoordinate({ lat, lng });
                     setNewOpeningHours(openingHours || "");
                     setNewGooglePlaceId(googlePlaceId || "");
+                    setNewWeeklyOpeningHours(weeklyOpeningHours);
                   }} 
                 />
               ) : (
@@ -1025,6 +943,8 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                 </div>
               )}
             </div>
+            {organizationError && <p role="alert" className="text-sm text-destructive">{organizationError}</p>}
+            <TastePicker value={newTags} onChange={setNewTags} />
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"

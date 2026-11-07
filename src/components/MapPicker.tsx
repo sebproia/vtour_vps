@@ -1,114 +1,253 @@
 "use client";
-
-import { useState, useCallback, useRef } from "react";
-import { useLoadScript, GoogleMap, Marker, Autocomplete } from "@react-google-maps/api";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  useLoadScript,
+  GoogleMap,
+  Marker,
+  Autocomplete,
+} from "@react-google-maps/api";
+import { Loader2, LocateFixed } from "lucide-react";
 import { Input } from "@/components/ui/input";
-
+import { openingHoursForDate, tourDay } from "../../convex/lib/schedule";
 const libraries: "places"[] = ["places"];
-
+type Position = { lat: number; lng: number };
 interface MapPickerProps {
-  onLocationSelect: (name: string, address: string, lat: number, lng: number, openingHours?: string, googlePlaceId?: string) => void;
-  initialLocation?: { lat: number; lng: number };
+  onLocationSelect: (
+    name: string,
+    address: string,
+    lat: number,
+    lng: number,
+    openingHours?: string,
+    googlePlaceId?: string,
+    weeklyOpeningHours?: string[],
+  ) => void;
+  initialLocation?: Position;
   tourDate?: string;
 }
-
-export default function MapPicker({ onLocationSelect, initialLocation, tourDate }: MapPickerProps) {
+export default function MapPicker({
+  onLocationSelect,
+  initialLocation,
+  tourDate,
+}: MapPickerProps) {
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
-
-  const [mapCenter, setMapCenter] = useState(initialLocation || { lat: 48.8566, lng: 2.3522 }); // Paris par défaut
-  const [markerPos, setMarkerPos] = useState<{lat: number, lng: number} | null>(initialLocation || null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-
-  const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
-    autocompleteRef.current = autocomplete;
-  };
-
-  const onPlaceChanged = () => {
-    if (autocompleteRef.current !== null) {
-      const place = autocompleteRef.current.getPlace();
-      
-      if (place.geometry && place.geometry.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const address = place.formatted_address || "Unknown address";
-        const name = place.name || address.split(',')[0];
-        
-        let openingHoursToday = "";
-        if (place.opening_hours && place.opening_hours.weekday_text) {
-          const dateObj = tourDate ? new Date(tourDate) : new Date();
-          const dayIndex = dateObj.getDay();
-          const weekdayTextIdx = dayIndex === 0 ? 6 : dayIndex - 1;
-          const fullText = place.opening_hours.weekday_text[weekdayTextIdx];
-          if (fullText) {
-            const parts = fullText.split(": ");
-            openingHoursToday = parts[1] || fullText;
-          }
+  const [mapCenter, setMapCenter] = useState(
+    initialLocation || { lat: 48.8566, lng: 2.3522 },
+  );
+  const [marker, setMarker] = useState<Position | null>(
+    initialLocation || null,
+  );
+  const [userPosition, setUserPosition] = useState<Position | null>(null);
+  const [locate, setLocate] = useState(false);
+  const [locationError, setLocationError] = useState("");
+  const [locating, setLocating] = useState(false);
+  const recenterRequested = useRef(false);
+  const selectionRequest = useRef(0);
+  useEffect(
+    () => () => {
+      selectionRequest.current++;
+    },
+    [],
+  );
+  const autocomplete = useRef<google.maps.places.Autocomplete | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    navigator.permissions
+      ?.query({ name: "geolocation" })
+      .then((permission) => {
+        if (!cancelled && permission.state === "granted") setLocate(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  useEffect(() => {
+    if (!locate || !navigator.geolocation) return;
+    let cancelled = false;
+    const watch = navigator.geolocation.watchPosition(
+      (position) => {
+        if (cancelled) return;
+        const value = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setUserPosition(value);
+        setLocationError("");
+        setLocating(false);
+        if (recenterRequested.current) {
+          setMapCenter(value);
+          recenterRequested.current = false;
         }
-        
-        setMapCenter({ lat, lng });
-        setMarkerPos({ lat, lng });
-        onLocationSelect(name, address, lat, lng, openingHoursToday || undefined, place.place_id || undefined);
-      }
-    }
-  };
-
-  const handleMapClick = (e: google.maps.MapMouseEvent) => {
-    if (e.latLng) {
-      const lat = e.latLng.lat();
-      const lng = e.latLng.lng();
-      setMarkerPos({ lat, lng });
-      
-      // Geocoding inverse manuel pour un clic aléatoire
-      const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (status === "OK" && results && results[0]) {
-          const address = results[0].formatted_address;
-          const name = address.split(',')[0]; // Extrait sommaire du nom
-          onLocationSelect(name, address, lat, lng);
-        } else {
-          onLocationSelect("Lieu cliqué", "Adresse inconnue", lat, lng);
-        }
-      });
-    }
-  };
-
-  if (loadError) return <div className="p-4 text-red-500 border border-red-500 rounded-xl">Error loading Google Maps</div>;
-  if (!isLoaded) return <div className="h-[300px] w-full bg-muted rounded-xl flex items-center justify-center border-2"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-
+      },
+      () => {
+        if (cancelled) return;
+        setLocationError(
+          "Position inaccessible. Autorise la localisation pour afficher ta position.",
+        );
+        setLocating(false);
+        setUserPosition(null);
+        setLocate(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
+    );
+    return () => {
+      cancelled = true;
+      navigator.geolocation.clearWatch(watch);
+    };
+  }, [locate]);
+  function selectPlace() {
+    const place = autocomplete.current?.getPlace();
+    const location = place?.geometry?.location;
+    if (!place || !location) return;
+    selectionRequest.current++;
+    const value = { lat: location.lat(), lng: location.lng() };
+    const address =
+      place.formatted_address || place.name || "Adresse sélectionnée";
+    const week = place.opening_hours?.weekday_text || [];
+    setMapCenter(value);
+    setMarker(value);
+    onLocationSelect(
+      place.name || address.split(",")[0],
+      address,
+      value.lat,
+      value.lng,
+      openingHoursForDate(week, tourDay(tourDate)),
+      place.place_id,
+      week,
+    );
+  }
+  function mapClick(event: google.maps.MapMouseEvent) {
+    if (!event.latLng) return;
+    const request = ++selectionRequest.current;
+    const value = { lat: event.latLng.lat(), lng: event.latLng.lng() };
+    setMarker(value);
+    new google.maps.Geocoder().geocode(
+      { location: value },
+      (results, status) => {
+        if (request !== selectionRequest.current) return;
+        const address =
+          status === "OK" && results?.[0]
+            ? results[0].formatted_address
+            : `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}`;
+        onLocationSelect(
+          address.split(",")[0],
+          address,
+          value.lat,
+          value.lng,
+          undefined,
+          undefined,
+          [],
+        );
+      },
+    );
+  }
+  if (loadError)
+    return (
+      <p role="alert" className="p-3 text-sm text-red-700">
+        Carte indisponible. Vous pouvez saisir l’adresse manuellement.
+      </p>
+    );
+  if (!isLoaded)
+    return (
+      <div
+        role="status"
+        className="h-[300px] flex items-center justify-center bg-muted rounded-xl"
+      >
+        <Loader2
+          className="size-8 animate-spin"
+          aria-label="Chargement de la carte"
+        />
+      </div>
+    );
   return (
-    <div className="space-y-4">
-      <Autocomplete 
-        onLoad={onLoad} 
-        onPlaceChanged={onPlaceChanged}
+    <div className="space-y-3">
+      <Autocomplete
+        onLoad={(instance) => {
+          autocomplete.current = instance;
+        }}
+        onPlaceChanged={selectPlace}
         options={{
-          componentRestrictions: { country: "fr" }
+          componentRestrictions: { country: "fr" },
+          fields: [
+            "geometry",
+            "formatted_address",
+            "name",
+            "opening_hours",
+            "place_id",
+          ],
         }}
       >
-        <Input 
-          type="text" 
-          placeholder="Search for a restaurant or place..." 
-          className="h-14 text-lg rounded-xl border-2 pl-4 shadow-sm"
+        <Input
+          data-map-search="true"
+          aria-label="Rechercher un restaurant ou une adresse sur la carte"
+          type="text"
+          placeholder="Rechercher un restaurant ou une adresse…"
+          className="h-12 text-base rounded-xl border-2"
         />
       </Autocomplete>
-
-      <div className="h-[300px] w-full rounded-xl overflow-hidden border-2 z-0 relative shadow-inner">
+      <div className="h-[300px] w-full rounded-xl overflow-hidden border-2 relative">
         <GoogleMap
           mapContainerStyle={{ width: "100%", height: "100%" }}
           center={mapCenter}
           zoom={15}
-          onClick={handleMapClick}
+          onClick={mapClick}
           options={{ disableDefaultUI: true, zoomControl: true }}
         >
-          {markerPos && <Marker position={markerPos} animation={google.maps.Animation.DROP} />}
+          {marker && <Marker position={marker} title="Adresse sélectionnée" />}
+          {userPosition && (
+            <Marker
+              position={userPosition}
+              title="Ma position"
+              zIndex={100}
+              icon={{
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: "#1683ff",
+                fillOpacity: 1,
+                strokeColor: "#fff",
+                strokeWeight: 3,
+              }}
+            />
+          )}
         </GoogleMap>
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-primary shadow-sm z-[1000] pointer-events-none">
-          Click map or use search 📍
-        </div>
+        <button
+          type="button"
+          aria-label="Recentrer sur ma position"
+          disabled={locating}
+          className="absolute bottom-8 left-3 min-h-11 flex items-center gap-2 rounded-xl border bg-white px-3 text-sm font-bold text-foreground shadow-md disabled:opacity-60"
+          onClick={() => {
+            if (!navigator.geolocation) {
+              setLocationError(
+                "La localisation n’est pas disponible sur cet appareil.",
+              );
+              return;
+            }
+            setLocationError("");
+            if (userPosition) {
+              setMapCenter(userPosition);
+              return;
+            }
+            recenterRequested.current = true;
+            setLocating(true);
+            setLocate(true);
+          }}
+        >
+          {locating ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <LocateFixed className="size-4" />
+          )}{" "}
+          Ma position
+        </button>
       </div>
+      {locationError && (
+        <p role="alert" className="text-sm text-red-700">
+          {locationError}
+        </p>
+      )}
     </div>
   );
 }

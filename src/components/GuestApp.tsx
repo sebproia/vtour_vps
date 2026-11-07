@@ -1,16 +1,18 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, ImagePlus, ChevronLeft, ChevronRight } from "lucide-react";
+
 import TastingCard from "@/components/TastingCard";
+import StepNavigation from "@/components/StepNavigation";
+import { PlaceTags } from "@/components/PlaceTags";
+import { useWalkingTimes } from "@/hooks/useWalkingTimes";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLoadScript } from "@react-google-maps/api";
 
@@ -23,54 +25,14 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   
   const [name, setName] = useState("");
   const [hasJoined, setHasJoined] = useState(false);
-  const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null);
   const [viewIndex, setViewIndex] = useState<number>(0);
-  const [travelTimes, setTravelTimes] = useState<Record<string, string>>({});
 
-  const { isLoaded } = useLoadScript({
+  const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
 
-  useEffect(() => {
-    if (!isLoaded || !places || places.length < 2) {
-      setTravelTimes({});
-      return;
-    }
-
-    try {
-      const service = new google.maps.DistanceMatrixService();
-      
-      const origins = places.slice(0, -1).map(p => {
-        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
-        return p.address;
-      });
-      
-      const destinations = places.slice(1).map(p => {
-        if (p.coordinates) return new google.maps.LatLng(p.coordinates.lat, p.coordinates.lng);
-        return p.address;
-      });
-
-      service.getDistanceMatrix({
-        origins,
-        destinations,
-        travelMode: google.maps.TravelMode.WALKING,
-      }, (response, status) => {
-        if (status === "OK" && response) {
-          const times: Record<string, string> = {};
-          for (let i = 0; i < origins.length; i++) {
-            const element = response.rows[i]?.elements[i];
-            if (element && element.status === "OK") {
-              times[places[i]._id] = element.duration.text;
-            }
-          }
-          setTravelTimes(times);
-        }
-      });
-    } catch (err) {
-      console.error("Error calculating travel times:", err);
-    }
-  }, [isLoaded, places]);
+  const { travelTimes } = useWalkingTimes(places, isLoaded, Boolean(loadError));
 
   // Sync viewIndex with the tour's current step when it changes
   useEffect(() => {
@@ -178,21 +140,6 @@ export default function GuestApp({ tourId }: { tourId: string }) {
     const isPassed = tour.currentStepIndex > displayPlace.order;
     const isUpcoming = tour.currentStepIndex < displayPlace.order;
 
-    const handleDragEnd = (event: any, info: any) => {
-      const swipeThreshold = 130; // pixels
-      if (info.offset.x < -swipeThreshold) {
-        // Swiped left -> Go to next stop
-        if (viewIndex < places.length - 1) {
-          setViewIndex(viewIndex + 1);
-        }
-      } else if (info.offset.x > swipeThreshold) {
-        // Swiped right -> Go to previous stop
-        if (viewIndex > 0) {
-          setViewIndex(viewIndex - 1);
-        }
-      }
-    };
-
     const previousPlace = places.find(p => p.order === displayPlace.order - 1);
     const travelTimeToActive = previousPlace ? travelTimes[previousPlace._id] : null;
 
@@ -212,65 +159,20 @@ export default function GuestApp({ tourId }: { tourId: string }) {
                 Arrêt {viewIndex + 1} / {places.length}
               </span>
             </div>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {places.map((p, idx) => (
-                <button
-                  key={p._id}
-                  onClick={() => setViewIndex(idx)}
-                  className={`h-3 rounded-full transition-all duration-300 cursor-pointer ${
-                    idx === viewIndex 
-                      ? "w-10 bg-[hsl(190,80%,50%)] shadow-sm" 
-                      : idx === tour.currentStepIndex
-                      ? "w-3 bg-white animate-pulse"
-                      : idx < tour.currentStepIndex
-                      ? "w-3 bg-emerald-400"
-                      : "w-3 bg-white/20 hover:bg-white/40"
-                  }`}
-                  title={`Aller à l'arrêt ${idx + 1}`}
-                />
-              ))}
-            </div>
+            <StepNavigation index={viewIndex} count={places.length} onChange={setViewIndex} guest />
           </div>
         )}
 
         {/* Cards Carousel Frame */}
         <div className="relative overflow-visible min-h-[400px]">
-          {/* Visual swipe arrows on sides (only on desktop/hover) */}
-          <div className="absolute top-1/2 -left-12 -translate-y-1/2 hidden md:block">
-            <Button
-              size="icon"
-              variant="outline"
-              disabled={viewIndex === 0}
-              onClick={() => setViewIndex(viewIndex - 1)}
-              className="w-10 h-10 rounded-full bg-white/15 border-2 border-white/20 text-white shadow-md hover:bg-white/25 transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </Button>
-          </div>
-          <div className="absolute top-1/2 -right-12 -translate-y-1/2 hidden md:block">
-            <Button
-              size="icon"
-              variant="outline"
-              disabled={viewIndex === places.length - 1}
-              onClick={() => setViewIndex(viewIndex + 1)}
-              className="w-10 h-10 rounded-full bg-white/15 border-2 border-white/20 text-white shadow-md hover:bg-white/25 transition-colors cursor-pointer"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </Button>
-          </div>
-
           <AnimatePresence mode="wait">
             <motion.div
               key={viewIndex}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.6}
-              onDragEnd={handleDragEnd}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="bg-white/15 backdrop-blur-sm border-2 border-white/20 rounded-[2.2rem] p-5 sm:p-6 shadow-2xl space-y-4 touch-none cursor-grab active:cursor-grabbing text-white relative overflow-hidden"
+              className="bg-white/15 backdrop-blur-sm border-2 border-white/20 rounded-[2.2rem] p-5 sm:p-6 shadow-2xl space-y-4 touch-pan-y text-white relative overflow-hidden"
             >
               {/* Top status bar of card */}
               <div className="flex justify-between items-center pb-2 border-b-2 border-white/10 select-none">
@@ -304,6 +206,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
                     {displayPlace.address}
                   </p>
                 )}
+                {!isUpcoming && <PlaceTags tags={displayPlace.tags} />}
                 {displayPlace.adminComment && !isUpcoming && (
                   <div className="inline-block mt-2 bg-white/15 border border-white/20 text-white px-3 py-1.5 rounded-xl text-sm text-left">
                     <span className="font-bold">💡</span> <span className="font-medium">{displayPlace.adminComment}</span>
@@ -328,11 +231,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
             </motion.div>
           </AnimatePresence>
 
-          {/* Left/Right swipe indicators for mobile */}
-          <div className="flex justify-between items-center text-[10px] text-white/50 px-4 pt-3 select-none">
-            <span>← Glisser pour reculer</span>
-            <span>Glisser pour avancer →</span>
-          </div>
+
         </div>
       </div>
     );

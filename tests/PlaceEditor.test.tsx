@@ -20,7 +20,7 @@ vi.mock("next/dynamic", () => ({
     }) {
       return (
         <>
-          <input aria-label="Recherche adresse" />
+          <input data-map-search="true" aria-label="Recherche adresse" />
           <button
             type="button"
             onClick={() =>
@@ -73,6 +73,8 @@ test("prefills the existing place and saves a new location against its original 
     adminComment: "Soup",
     openingHours: undefined,
     googlePlaceId: undefined,
+    weeklyOpeningHours: undefined,
+    tags: [],
   });
   expect(onClose).toHaveBeenCalledOnce();
   expect(place.address).toBe("Old address");
@@ -134,7 +136,7 @@ test("prevents duplicate saves or cancellation while the mutation is pending", a
   });
 });
 
-test("requires a map selection for legacy places without coordinates and rejects blank names", async () => {
+test("allows manual addresses without coordinates and still rejects blank names", async () => {
   const user = userEvent.setup();
   render(
     <PlaceEditor
@@ -142,6 +144,8 @@ test("requires a map selection for legacy places without coordinates and rejects
       onClose={vi.fn()}
     />,
   );
+  expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
+  await user.clear(screen.getByLabelText("Adresse"));
   expect(screen.getByRole("button", { name: "Enregistrer" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Choose location ()" }));
   expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
@@ -157,4 +161,16 @@ test("Enter in map search never submits the old address while choosing a suggest
     "New restaurant{Enter}",
   );
   expect(save).not.toHaveBeenCalled();
+});
+
+
+test("manual address correction clears old GPS data and saves both taste tags", async()=>{
+  const user=userEvent.setup();save.mockResolvedValue(null);
+  render(<PlaceEditor place={place} onClose={vi.fn()}/>);
+  await user.clear(screen.getByLabelText("Adresse"));
+  await user.type(screen.getByLabelText("Adresse"),"25 rue de Rivoli, Paris");
+  await user.click(screen.getByRole("button",{name:"🍰 Sucré"}));
+  await user.click(screen.getByRole("button",{name:"🧂 Salé"}));
+  await user.click(screen.getByRole("button",{name:"Enregistrer"}));
+  expect(save).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({placeId:"place-1",address:"25 rue de Rivoli, Paris",coordinates:undefined,googlePlaceId:undefined,openingHours:undefined,tags:["sweet","savory"]}));
 });
