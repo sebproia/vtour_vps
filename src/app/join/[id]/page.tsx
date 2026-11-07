@@ -1,4 +1,5 @@
 import GuestApp from "@/components/GuestApp";
+import ContinueInApp from "@/components/ContinueInApp";
 
 export default async function JoinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,6 +15,7 @@ export default async function JoinPage({ params }: { params: Promise<{ id: strin
         }}
       />
       <main className="relative z-10 px-4 py-6 w-full max-w-md mx-auto">
+        <ContinueInApp path={`/join/${id}`}/>
         <GuestApp tourId={id} />
       </main>
     </div>

@@ -13,6 +13,7 @@ import TastingCard from "@/components/TastingCard";
 import StepNavigation from "@/components/StepNavigation";
 import { PlaceTags } from "@/components/PlaceTags";
 import { useWalkingTimes } from "@/hooks/useWalkingTimes";
+import { rememberTour } from "@/lib/recent-tour";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLoadScript } from "@react-google-maps/api";
 
@@ -23,6 +24,7 @@ export default function GuestApp({ tourId }: { tourId: string }) {
   const tour = useQuery(api.places.getTourInfo, { tourId: tId });
   const places = useQuery(api.places.getPlacesByTour, { tourId: tId });
   
+  useEffect(()=>{if(tour)rememberTour({id:tId,name:tour.name,status:tour.status});},[tour,tId]);
   const [name, setName] = useState("");
   const [hasJoined, setHasJoined] = useState(false);
   const [viewIndex, setViewIndex] = useState<number>(0);

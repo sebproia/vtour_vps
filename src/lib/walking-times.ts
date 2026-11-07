@@ -4,7 +4,7 @@ export interface RoutePlace {
   coordinates?: { lat: number; lng: number };
 }
 export type WalkingLeg =
-  | { status: "ok"; seconds: number; text: string }
+  | { status: "ok"; seconds: number; text: string; meters?: number }
   | { status: "unavailable"; text: string };
 export function formatWalkingTime(seconds: number) {
   const minutes = Math.max(0, Math.round(seconds / 60));
@@ -23,7 +23,10 @@ export function formatWalkingTime(seconds: number) {
 /** One request per adjacent pair, never an N×N matrix; failures remain local to a leg. */
 export async function calculateWalkingLegs(
   places: RoutePlace[],
-  lookup: (from: RoutePlace, to: RoutePlace) => Promise<number>,
+  lookup: (
+    from: RoutePlace,
+    to: RoutePlace,
+  ) => Promise<number | { seconds: number; meters?: number }>,
   onResult: (id: string, result: WalkingLeg) => void,
   cancelled = () => false,
 ) {
@@ -33,10 +36,19 @@ export async function calculateWalkingLegs(
       const index = next++;
       let result: WalkingLeg;
       try {
-        const seconds = await lookup(places[index], places[index + 1]);
+        const route = await lookup(places[index], places[index + 1]);
+        const seconds = typeof route === "number" ? route : route.seconds;
+        const meters = typeof route === "number" ? undefined : route.meters;
         if (!Number.isFinite(seconds) || seconds < 0)
           throw new Error("Invalid duration");
-        result = { status: "ok", seconds, text: formatWalkingTime(seconds) };
+        result = {
+          status: "ok",
+          seconds,
+          text: formatWalkingTime(seconds),
+          ...(meters !== undefined && Number.isFinite(meters) && meters >= 0
+            ? { meters }
+            : {}),
+        };
       } catch {
         result = { status: "unavailable", text: "Trajet indisponible" };
       }
