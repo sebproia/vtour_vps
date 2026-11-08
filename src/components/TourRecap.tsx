@@ -193,9 +193,9 @@ export default function TourRecap({ tourId }: { tourId: string }) {
         </div>
       )}
 
-      <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="min-w-0 w-full space-y-6 animate-in fade-in duration-700">
         {/* Exportable area — single column, card layout */}
-        <div id="recap-content-area" className="bg-[hsl(45,50%,97%)] pt-6 pb-6 px-3 sm:px-4 rounded-2xl" style={{ maxWidth: '480px', margin: '0 auto' }}>
+        <div id="recap-content-area" className="min-w-0 w-full [overflow-wrap:anywhere] bg-[hsl(45,50%,97%)] pt-6 pb-6 px-3 sm:px-4 rounded-2xl" style={{ maxWidth: '480px', margin: '0 auto' }}>
           
           {/* Header */}
           <div className="text-center space-y-1.5 mb-8">
@@ -309,7 +309,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
                     <div className="p-3 space-y-1.5">
                       {/* Name + Score row */}
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-base font-display font-black text-foreground leading-tight truncate">
+                        <h3 className="min-w-0 flex-1 text-base font-display font-black text-foreground leading-tight [overflow-wrap:anywhere]">
                           {place.name}
                         </h3>
                         {averageScore && (
@@ -323,7 +323,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
 
                       <PlaceTags tags={place.tags} />
                       {/* Address */}
-                      <p className="text-muted-foreground text-xs leading-tight">
+                      <p className="text-muted-foreground text-xs leading-tight [overflow-wrap:anywhere]">
                         {place.address}
                       </p>
 
@@ -353,7 +353,7 @@ export default function TourRecap({ tourId }: { tourId: string }) {
 
           <SaveRecap tourId={recap.tour._id} participants={participants} completed={recap.tour.status==="completed"}/>
           <Link href="/" className="w-full">
-            <Button size="lg" className="w-full h-12 text-base rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_4px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
+            <Button size="lg" className="w-full min-w-0 min-h-12 h-auto whitespace-normal py-3 text-base rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[0_4px_0_hsl(190,80%,40%)] hover:shadow-[0_2px_0_hsl(190,80%,40%)] hover:translate-y-1 transition-all font-display font-black">
               Organiser mon propre tour
             </Button>
           </Link>

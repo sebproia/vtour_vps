@@ -169,11 +169,11 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
       {exportStatus && (
         <p className="text-center text-sm font-medium text-muted-foreground animate-in fade-in">{exportStatus}</p>
       )}
-      <div className="flex gap-3 w-full">
+      <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <Button 
           onClick={handleDownloadImage}
           disabled={isExporting}
-          className="flex-1 h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-[0_4px_0_hsl(220,90%,30%)] hover:shadow-[0_0px_0_hsl(220,90%,30%)] hover:translate-y-1 transition-all text-sm"
+          className="min-w-0 whitespace-normal min-h-12 h-auto py-3 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-[0_4px_0_hsl(220,90%,30%)] hover:shadow-[0_0px_0_hsl(220,90%,30%)] hover:translate-y-1 transition-all text-sm"
         >
           {isExporting ? <Loader2 className="animate-spin w-4 h-4" /> : <ImageDown className="mr-1.5 w-4 h-4" />} 
           Enregistrer l’image
@@ -181,7 +181,7 @@ export default function ExportButtons({ targetId, tourName }: ExportButtonsProps
         <Button 
           onClick={handleExportPDF}
           disabled={isExporting}
-          className="flex-1 h-12 rounded-2xl font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-[0_4px_0_hsl(45,90%,40%)] hover:shadow-[0_0px_0_hsl(45,90%,40%)] hover:translate-y-1 transition-all text-sm"
+          className="min-w-0 whitespace-normal min-h-12 h-auto py-3 rounded-2xl font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-[0_4px_0_hsl(45,90%,40%)] hover:shadow-[0_0px_0_hsl(45,90%,40%)] hover:translate-y-1 transition-all text-sm"
         >
           {isExporting ? <Loader2 className="animate-spin w-4 h-4" /> : <Download className="mr-1.5 w-4 h-4" />} 
           Enregistrer le PDF

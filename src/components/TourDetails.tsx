@@ -305,7 +305,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
             <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap h-10 sm:h-12 px-3 sm:px-5 text-sm sm:text-base rounded-xl border-2 font-display font-black bg-card hover:bg-muted transition-all">
               <QrCode className="mr-1.5 w-4 h-4 sm:w-5 sm:h-5" /> QR
             </DialogTrigger>
-            <DialogContent className="w-[95vw] sm:max-w-md mx-auto border-4 border-primary/20 rounded-[2rem] bg-card p-4 sm:p-6">
+            <DialogContent className="sm:max-w-md border-4 border-primary/20 rounded-[2rem] bg-card p-4 sm:p-6">
               <DialogHeader>
                 <DialogTitle className="text-2xl sm:text-3xl font-display font-black text-center text-primary">Join the Tour! 🍩</DialogTitle>
               </DialogHeader>
@@ -796,7 +796,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   <label className="text-sm font-bold font-display">Nom du restaurant</label>
                   <Input 
                     placeholder="e.g. Joe's Pizza" 
-                    className="h-10 text-sm rounded-lg border-2"
+                    className="min-h-11 text-base rounded-lg border-2"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     disabled={tour.status === "completed"}
@@ -828,10 +828,6 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                   )}
                   {newAddress && (
                     <div className="space-y-3">
-                      <div className="p-2.5 bg-primary/10 rounded-lg border border-primary/20 flex gap-2 items-center">
-                        <MapPin className="text-primary flex-shrink-0 w-4 h-4" />
-                        <span className="text-xs font-medium truncate">{newAddress}</span>
-                      </div>
                       {newOpeningHours && (
                         <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 flex gap-2 items-center">
                           <span className="text-xs font-bold text-amber-600">🕒 {newOpeningHours}</span>
@@ -841,7 +837,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                         <label className="text-sm font-bold font-display">Plat recommandé (Optionnel)</label>
                         <Input 
                           placeholder="Ex: Prenez le menu signature !" 
-                          className="h-10 text-sm rounded-lg border-2"
+                          className="min-h-11 text-base rounded-lg border-2"
                           value={newAdminComment}
                           onChange={(e) => setNewAdminComment(e.target.value)}
                           disabled={tour.status === "completed"}
@@ -880,7 +876,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
           setNewTags([]);
         }
       }}>
-        <DialogContent className="w-[95vw] sm:max-w-md mx-auto border-4 border-primary/20 rounded-[2rem] bg-card p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md border-4 border-primary/20 rounded-[2rem] bg-card p-4 sm:p-6 max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl font-display font-black text-center text-primary">
               Insérer un arrêt à la position {insertIndex || 1} 📍
@@ -891,7 +887,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               <label className="text-sm font-bold font-display">Nom du restaurant</label>
               <Input 
                 placeholder="Ex: Joe's Pizza" 
-                className="h-10 text-sm rounded-lg border-2"
+                className="min-h-11 text-base rounded-lg border-2"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
               />
@@ -922,10 +918,6 @@ export default function TourDetails({ tourId }: { tourId: string }) {
               )}
               {newAddress && (
                 <div className="space-y-3">
-                  <div className="p-2.5 bg-primary/10 rounded-lg border border-primary/20 flex gap-2 items-center">
-                    <MapPin className="text-primary flex-shrink-0 w-4 h-4" />
-                    <span className="text-xs font-medium truncate">{newAddress}</span>
-                  </div>
                   {newOpeningHours && (
                     <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 flex gap-2 items-center">
                       <span className="text-xs font-bold text-amber-600 font-display">🕒 {newOpeningHours}</span>
@@ -935,7 +927,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
                     <label className="text-sm font-bold font-display">Plat recommandé (Optionnel)</label>
                     <Input 
                       placeholder="Ex: Prenez le menu signature !" 
-                      className="h-10 text-sm rounded-lg border-2"
+                      className="min-h-11 text-base rounded-lg border-2"
                       value={newAdminComment}
                       onChange={(e) => setNewAdminComment(e.target.value)}
                     />
@@ -945,23 +937,23 @@ export default function TourDetails({ tourId }: { tourId: string }) {
             </div>
             {organizationError && <p role="alert" className="text-sm text-destructive">{organizationError}</p>}
             <TastePicker value={newTags} onChange={setNewTags} />
-            <div className="flex gap-2 pt-2">
+            <div className="grid min-w-0 grid-cols-2 gap-2 pt-2">
               <Button
                 variant="outline"
-                className="flex-grow rounded-xl h-11 border-2 font-display font-black cursor-pointer text-foreground"
+                className="min-w-0 whitespace-normal rounded-xl min-h-11 h-auto py-2 border-2 font-display font-black cursor-pointer text-foreground"
                 onClick={() => {
                   setIsAddModalOpen(false);
                   setInsertIndex(null);
                 }}
               >
-                ANNULER
+                Annuler
               </Button>
               <Button 
                 onClick={handleAddPlace} 
-                className="flex-grow h-11 rounded-xl font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all cursor-pointer"
+                className="min-w-0 whitespace-normal min-h-11 h-auto py-2 rounded-xl font-display font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_3px_0_hsl(330,80%,40%)] hover:shadow-[0_1px_0_hsl(330,80%,40%)] hover:translate-y-0.5 transition-all cursor-pointer"
                 disabled={!newName.trim() || !newAddress.trim()}
               >
-                INSÉRER STOP
+                Ajouter l’adresse
               </Button>
             </div>
           </div>

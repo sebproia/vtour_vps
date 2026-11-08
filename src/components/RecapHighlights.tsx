@@ -92,7 +92,7 @@ export default function RecapHighlights({
           </p>
         )}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid min-w-0 grid-cols-1 items-start sm:grid-cols-2 gap-3">
         {[
           {
             title: "Top 3",
@@ -109,25 +109,50 @@ export default function RecapHighlights({
         ].map((list) => (
           <div
             key={list.title}
-            className={`rounded-2xl border-2 ${list.tone} p-3`}
+            className={`rounded-2xl border-2 ${list.tone} min-w-0 p-3`}
           >
             <h3 className="text-xl font-display font-black">{list.title}</h3>
             <p className="mb-3 text-xs text-foreground/75">{list.subtitle}</p>
             {list.items.length ? (
-              <ol className="space-y-2">
+              <ol
+                className={
+                  list.title === "Top 3"
+                    ? "space-y-2"
+                    : "divide-y divide-primary/10"
+                }
+              >
                 {list.items.map((place, index) => (
                   <li
                     key={place._id}
-                    className="flex items-center gap-3 rounded-xl border border-border/60 bg-white p-2 text-sm"
+                    className={
+                      list.title === "Top 3"
+                        ? "flex min-w-0 items-center gap-3 rounded-xl border border-border/60 bg-white p-2 text-sm"
+                        : "flex min-w-0 items-center gap-2 text-sm"
+                    }
                   >
-                    <RankMedal rank={index + 1} />
+                    {list.title === "Top 3" ? (
+                      <RankMedal rank={index + 1} />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="text-xs text-foreground/60"
+                      >
+                        {index + 1}.
+                      </span>
+                    )}
                     <a
-                      className="flex min-h-11 min-w-0 flex-1 items-center font-bold underline decoration-dotted underline-offset-2 break-words"
+                      className="flex min-h-11 min-w-0 flex-1 items-center font-bold underline decoration-dotted underline-offset-2 [overflow-wrap:anywhere]"
                       href={`#recap-stop-${place._id}`}
                     >
                       {place.name}
                     </a>
-                    <span className="shrink-0 rounded-lg bg-accent/15 px-2 py-1 font-black">
+                    <span
+                      className={
+                        list.title === "Top 3"
+                          ? "shrink-0 rounded-lg bg-accent/15 px-2 py-1 font-black"
+                          : "shrink-0 font-bold"
+                      }
+                    >
                       {place.averageScore.toFixed(1)}/10
                     </span>
                   </li>

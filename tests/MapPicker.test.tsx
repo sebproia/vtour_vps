@@ -174,6 +174,10 @@ test("clicking a restaurant fetches its business name instead of reverse geocodi
     expect.any(Function),
   );
   expect(state.geocode).not.toHaveBeenCalled();
+  expect(screen.getByRole("status")).toHaveTextContent("Lieu sélectionné");
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Boulangerie de la place",
+  );
   expect(select).toHaveBeenCalledWith(
     "Boulangerie de la place",
     "1 place Jean Monnet",
@@ -228,7 +232,5 @@ test("a plain map position asks for a name instead of using the street as restau
   render(<MapPicker onLocationSelect={select} />);
   act(() => state.click?.({ latLng: { lat: () => 48, lng: () => 2 } }));
   expect(select.mock.calls[0].slice(0, 2)).toEqual(["", "1 place Jean Monnet"]);
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Ajoute le nom du restaurant",
-  );
+  expect(screen.getByText(/Ajoute le nom du restaurant/)).toBeInTheDocument();
 });

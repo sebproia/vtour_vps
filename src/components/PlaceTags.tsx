@@ -40,11 +40,11 @@ export function TastePicker({
   disabled?: boolean;
 }) {
   return (
-    <fieldset disabled={disabled} className="space-y-2">
+    <fieldset disabled={disabled} className="min-w-0 space-y-2">
       <legend className="text-sm font-bold">
         Type de dégustation (optionnel)
       </legend>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <button
             key={option.value}
