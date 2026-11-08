@@ -2,6 +2,7 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import Link from "next/link";
+import NotebookDistance from "@/components/NotebookDistance";
 import VitoSticker from "@/components/VitoSticker";
 import { mapsPlaceUrl } from "@/lib/recap-summary";
 export default function PersonalRecaps() {
@@ -40,6 +41,7 @@ export default function PersonalRecaps() {
           </div>
         ))}
       </div>
+      <NotebookDistance recaps={data.recaps} />
       <p className="text-xs text-foreground/70">
         Seules tes adresses notées sont comptées. Un même lieu visité plusieurs
         fois ne compte qu’une fois.

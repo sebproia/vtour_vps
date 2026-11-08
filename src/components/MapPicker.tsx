@@ -52,6 +52,9 @@ export default function MapPicker({
     [],
   );
   const autocomplete = useRef<google.maps.places.Autocomplete | null>(null);
+  const map = useRef<google.maps.Map | null>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const [selectionHint, setSelectionHint] = useState("");
   useEffect(() => {
     let cancelled = false;
     navigator.permissions
@@ -98,19 +101,27 @@ export default function MapPicker({
       navigator.geolocation.clearWatch(watch);
     };
   }, [locate]);
-  function selectPlace() {
-    const place = autocomplete.current?.getPlace();
-    const location = place?.geometry?.location;
-    if (!place || !location) return;
-    selectionRequest.current++;
-    const value = { lat: location.lat(), lng: location.lng() };
+  function applyPlace(
+    place: google.maps.places.PlaceResult,
+    fallback: Position,
+  ) {
+    const location = place.geometry?.location;
+    const value = location
+      ? { lat: location.lat(), lng: location.lng() }
+      : fallback;
     const address =
-      place.formatted_address || place.name || "Adresse sélectionnée";
+      place.formatted_address ||
+      `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}`;
     const week = place.opening_hours?.weekday_text || [];
     setMapCenter(value);
     setMarker(value);
+    setSelectionHint(
+      place.name ? "" : "Ajoute le nom du restaurant dans le champ ci-dessus.",
+    );
+    if (searchInput.current && place.name)
+      searchInput.current.value = place.name;
     onLocationSelect(
-      place.name || address.split(",")[0],
+      place.name || "",
       address,
       value.lat,
       value.lng,
@@ -119,30 +130,54 @@ export default function MapPicker({
       week,
     );
   }
+  function selectPlace() {
+    const place = autocomplete.current?.getPlace();
+    const location = place?.geometry?.location;
+    if (!place || !location) return;
+    selectionRequest.current++;
+    applyPlace(place, { lat: location.lat(), lng: location.lng() });
+  }
   function mapClick(event: google.maps.MapMouseEvent) {
     if (!event.latLng) return;
     const request = ++selectionRequest.current;
     const value = { lat: event.latLng.lat(), lng: event.latLng.lng() };
+    const placeId = (event as google.maps.IconMouseEvent).placeId;
     setMarker(value);
-    new google.maps.Geocoder().geocode(
-      { location: value },
-      (results, status) => {
-        if (request !== selectionRequest.current) return;
-        const address =
-          status === "OK" && results?.[0]
-            ? results[0].formatted_address
-            : `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}`;
-        onLocationSelect(
-          address.split(",")[0],
-          address,
-          value.lat,
-          value.lng,
-          undefined,
-          undefined,
-          [],
-        );
-      },
-    );
+    setSelectionHint("");
+    const geocode = () =>
+      new google.maps.Geocoder().geocode(
+        { location: value },
+        (results, status) => {
+          if (request !== selectionRequest.current) return;
+          const address =
+            status === "OK" ? results?.[0]?.formatted_address : undefined;
+          applyPlace({ formatted_address: address }, value);
+        },
+      );
+    if (placeId) {
+      event.stop();
+      setSelectionHint("Chargement du restaurant…");
+      const service = new google.maps.places.PlacesService(
+        map.current || document.createElement("div"),
+      );
+      service.getDetails(
+        {
+          placeId,
+          fields: [
+            "name",
+            "formatted_address",
+            "geometry",
+            "opening_hours",
+            "place_id",
+          ],
+        },
+        (place, status) => {
+          if (request !== selectionRequest.current) return;
+          if (status === "OK" && place) applyPlace(place, value);
+          else geocode();
+        },
+      );
+    } else geocode();
   }
   if (loadError)
     return (
@@ -181,6 +216,7 @@ export default function MapPicker({
         }}
       >
         <Input
+          ref={searchInput}
           data-map-search="true"
           aria-label="Rechercher un restaurant ou une adresse sur la carte"
           type="text"
@@ -194,6 +230,12 @@ export default function MapPicker({
           center={mapCenter}
           zoom={15}
           onClick={mapClick}
+          onLoad={(instance) => {
+            map.current = instance;
+          }}
+          onUnmount={() => {
+            map.current = null;
+          }}
           options={{ disableDefaultUI: true, zoomControl: true }}
         >
           {marker && <Marker position={marker} title="Adresse sélectionnée" />}
@@ -243,6 +285,11 @@ export default function MapPicker({
           Ma position
         </button>
       </div>
+      {selectionHint && (
+        <p role="status" className="text-sm text-foreground/75">
+          {selectionHint}
+        </p>
+      )}
       {locationError && (
         <p role="alert" className="text-sm text-red-700">
           {locationError}

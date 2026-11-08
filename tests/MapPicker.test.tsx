@@ -10,20 +10,28 @@ const state = vi.hoisted(() => ({
   clear: vi.fn(),
   position: undefined as undefined | PositionCallback,
   denied: undefined as undefined | PositionErrorCallback,
+  click: undefined as undefined | ((event: unknown) => void),
+  details: vi.fn(),
+  geocode: vi.fn(),
 }));
 vi.mock("@react-google-maps/api", () => ({
   useLoadScript: () => ({ isLoaded: true }),
   GoogleMap: ({
     children,
     center,
+    onClick,
   }: {
     children: React.ReactNode;
     center: unknown;
-  }) => (
-    <div data-testid="map" data-center={JSON.stringify(center)}>
-      {children}
-    </div>
-  ),
+    onClick: (event: unknown) => void;
+  }) => {
+    state.click = onClick;
+    return (
+      <div data-testid="map" data-center={JSON.stringify(center)}>
+        {children}
+      </div>
+    );
+  },
   Marker: ({ position, title }: { position: unknown; title: string }) => (
     <div title={title} data-position={JSON.stringify(position)} />
   ),
@@ -41,7 +49,19 @@ vi.mock("@react-google-maps/api", () => ({
   },
 }));
 beforeEach(() => {
-  vi.stubGlobal("google", { maps: { SymbolPath: { CIRCLE: 0 } } });
+  vi.stubGlobal("google", {
+    maps: {
+      SymbolPath: { CIRCLE: 0 },
+      places: {
+        PlacesService: class {
+          getDetails = state.details;
+        },
+      },
+      Geocoder: class {
+        geocode = state.geocode;
+      },
+    },
+  });
   Object.defineProperty(navigator, "permissions", {
     configurable: true,
     value: { query: vi.fn().mockResolvedValue({ state: "prompt" }) },
@@ -114,4 +134,101 @@ test("denied geolocation shows a recovery message and leaves map search availabl
   expect(
     screen.getByRole("textbox", { name: /Rechercher un restaurant/ }),
   ).toBeEnabled();
+});
+
+test("clicking a restaurant fetches its business name instead of reverse geocoding its street", () => {
+  const select = vi.fn(),
+    stop = vi.fn();
+  state.details.mockImplementation((_args, callback) =>
+    callback(
+      {
+        name: "Boulangerie de la place",
+        formatted_address: "1 place Jean Monnet",
+        place_id: "bakery",
+        opening_hours: {
+          weekday_text: [
+            "lundi: 09:00–18:00",
+            "mardi: 09:00–18:00",
+            "mercredi: 09:00–18:00",
+            "jeudi: 09:00–18:00",
+            "vendredi: 09:00–18:00",
+            "samedi: 09:00–18:00",
+            "dimanche: 09:00–18:00",
+          ],
+        },
+      },
+      "OK",
+    ),
+  );
+  render(<MapPicker onLocationSelect={select} />);
+  act(() =>
+    state.click?.({
+      latLng: { lat: () => 48, lng: () => 2 },
+      placeId: "bakery",
+      stop,
+    }),
+  );
+  expect(stop).toHaveBeenCalled();
+  expect(state.details).toHaveBeenCalledWith(
+    expect.objectContaining({ placeId: "bakery" }),
+    expect.any(Function),
+  );
+  expect(state.geocode).not.toHaveBeenCalled();
+  expect(select).toHaveBeenCalledWith(
+    "Boulangerie de la place",
+    "1 place Jean Monnet",
+    48,
+    2,
+    expect.any(String),
+    "bakery",
+    expect.any(Array),
+  );
+});
+test("an older restaurant details response cannot replace a newer selection", () => {
+  const select = vi.fn(),
+    callbacks: ((place: unknown, status: string) => void)[] = [];
+  state.details.mockImplementation((_args, callback) =>
+    callbacks.push(callback),
+  );
+  render(<MapPicker onLocationSelect={select} />);
+  act(() => {
+    state.click?.({
+      latLng: { lat: () => 48, lng: () => 2 },
+      placeId: "old",
+      stop: vi.fn(),
+    });
+    state.click?.({
+      latLng: { lat: () => 49, lng: () => 3 },
+      placeId: "new",
+      stop: vi.fn(),
+    });
+  });
+  act(() => {
+    callbacks[1](
+      {
+        name: "Nouveau restaurant",
+        formatted_address: "Lyon",
+        place_id: "new",
+      },
+      "OK",
+    );
+    callbacks[0](
+      { name: "Ancien", formatted_address: "Paris", place_id: "old" },
+      "OK",
+    );
+  });
+  expect(select).toHaveBeenCalledTimes(1);
+  expect(select.mock.calls[0][0]).toBe("Nouveau restaurant");
+});
+test("a plain map position asks for a name instead of using the street as restaurant name", () => {
+  const select = vi.fn();
+  state.geocode.mockImplementation((_args, callback) =>
+    callback([{ formatted_address: "1 place Jean Monnet" }], "OK"),
+  );
+  render(<MapPicker onLocationSelect={select} />);
+  act(() => state.click?.({ latLng: { lat: () => 48, lng: () => 2 } }));
+  expect(select.mock.calls[0].slice(0, 2)).toEqual(["", "1 place Jean Monnet"]);
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Ajoute le nom du restaurant",
+  );
 });

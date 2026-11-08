@@ -14,6 +14,7 @@ export function useWalkingTimes(
   const key = JSON.stringify(
     (places || []).map((p) => ({
       _id: p._id,
+      routeGroup: p.routeGroup,
       address: p.address,
       coordinates: p.coordinates,
     })),
@@ -90,7 +91,8 @@ export function useWalkingTimes(
   const travelSeconds: Record<string, number> = {};
   const travelMeters: Record<string, number> = {};
   let pendingLegs = 0;
-  for (const place of (places || []).slice(0, -1)) {
+  for (const [index, place] of (places || []).slice(0, -1).entries()) {
+    if (place.routeGroup !== places?.[index + 1].routeGroup) continue;
     const leg = state.key === key ? state.legs[place._id] : undefined;
     travelTimes[place._id] =
       leg?.text || (failed ? "Trajet indisponible" : "Calcul en cours…");
