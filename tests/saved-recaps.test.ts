@@ -139,3 +139,29 @@ test("unknown participants and unfinished tours cannot be silently saved as pers
     alex.mutation(api.savedRecaps.save, { tourId: draft }),
   ).rejects.toThrow();
 });
+test("route snapshots include every stop in order and survive source deletion without counting unscored stops as tastings", async () => {
+  const { owner, alex, tourId } = await setup();
+  await alex.mutation(api.savedRecaps.save, {
+    tourId,
+    participantName: "Alex",
+  });
+  await owner.mutation(api.tours.deleteTour, { tourId });
+  const result = await alex.query(api.savedRecaps.getMine, {});
+  expect(result.recaps[0].route).toHaveLength(3);
+  expect(result.totalAddresses).toBe(1);
+});
+test("legacy notebooks resolve full source routes and leave deleted unknown routes unknown", async () => {
+  const { t, owner, alex, tourId } = await setup();
+  const id = await alex.mutation(api.savedRecaps.save, {
+    tourId,
+    participantName: "Alex",
+  });
+  await t.run((ctx) => ctx.db.patch(id, { route: undefined }));
+  expect(
+    (await alex.query(api.savedRecaps.getMine, {})).recaps[0].route,
+  ).toHaveLength(3);
+  await owner.mutation(api.tours.deleteTour, { tourId });
+  expect(
+    (await alex.query(api.savedRecaps.getMine, {})).recaps[0].route,
+  ).toBeUndefined();
+});

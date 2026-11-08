@@ -60,6 +60,12 @@ export const save = mutation({
       participantName: args.participantName,
       savedAt: Date.now(),
       places: personal,
+      route: [...places]
+        .sort((a, b) => a.order - b.order)
+        .map((place) => ({
+          address: place.address,
+          coordinates: place.coordinates,
+        })),
     };
     if (existing) {
       await ctx.db.patch(existing._id, snapshot);
@@ -100,10 +106,25 @@ export const getMine = query({
     const recaps = await Promise.all(
       saved
         .sort((a, b) => b.savedAt - a.savedAt)
-        .map(async (recap) => ({
-          ...recap,
-          sourceAvailable: !!(await ctx.db.get(recap.tourId)),
-        })),
+        .map(async (recap) => {
+          const sourceAvailable = !!(await ctx.db.get(recap.tourId));
+          const sourcePlaces =
+            recap.route === undefined && sourceAvailable
+              ? await ctx.db
+                  .query("places")
+                  .withIndex("by_tour", (q) => q.eq("tourId", recap.tourId))
+                  .collect()
+              : undefined;
+          const route =
+            recap.route ??
+            sourcePlaces
+              ?.sort((a, b) => a.order - b.order)
+              .map((place) => ({
+                address: place.address,
+                coordinates: place.coordinates,
+              }));
+          return { ...recap, sourceAvailable, route };
+        }),
     );
     return { recaps, ...personalStats(saved) };
   },
