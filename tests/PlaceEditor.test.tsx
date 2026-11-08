@@ -56,14 +56,14 @@ test("prefills the existing place and saves a new location against its original 
   save.mockResolvedValue(null);
   render(<PlaceEditor place={place} onClose={onClose} />);
   expect(screen.getByLabelText("Nom du restaurant")).toHaveValue("Original");
-  expect(screen.getByText("Old address")).toBeInTheDocument();
+  expect(screen.getByLabelText("Adresse")).toHaveValue("Old address");
   expect(screen.getByLabelText("Plat recommandé (optionnel)")).toHaveValue(
     "Soup",
   );
   await user.click(
     screen.getByRole("button", { name: "Choose location (48)" }),
   );
-  expect(screen.getByText("New address")).toBeInTheDocument();
+  expect(screen.getByLabelText("Adresse")).toHaveValue("New address");
   await user.click(screen.getByRole("button", { name: "Enregistrer" }));
   expect(save).toHaveBeenCalledExactlyOnceWith({
     placeId: "place-1",
@@ -92,7 +92,7 @@ test("cancel discards selected changes without calling the mutation", async () =
   expect(onClose).toHaveBeenCalledOnce();
   unmount();
   render(<PlaceEditor place={place} onClose={onClose} />);
-  expect(screen.getByText("Old address")).toBeInTheDocument();
+  expect(screen.getByLabelText("Adresse")).toHaveValue("Old address");
   expect(screen.getByLabelText("Nom du restaurant")).toHaveValue("Original");
 });
 
@@ -111,7 +111,7 @@ test("shows failed saves without losing the draft and allows retry", async () =>
     "Impossible d’enregistrer",
   );
   expect(onClose).not.toHaveBeenCalled();
-  expect(screen.getByText("New address")).toBeInTheDocument();
+  expect(screen.getByLabelText("Adresse")).toHaveValue("New address");
   await user.click(screen.getByRole("button", { name: "Enregistrer" }));
   expect(onClose).toHaveBeenCalledOnce();
 });

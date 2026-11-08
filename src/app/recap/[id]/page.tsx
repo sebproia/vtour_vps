@@ -13,7 +13,7 @@ export default async function RecapPage({ params }: { params: Promise<{ id: stri
           backgroundPosition: "0 0, 20px 20px"
         }}
       />
-      <main className="relative z-10 p-6 md:p-12 max-w-4xl mx-auto h-screen overflow-y-auto">
+      <main className="relative z-10 w-full min-w-0 min-h-dvh p-3 sm:p-6 md:p-12 max-w-4xl mx-auto">
         <ContinueInApp path={`/join/${id}`}/>
         <TourRecap tourId={id} />
       </main>

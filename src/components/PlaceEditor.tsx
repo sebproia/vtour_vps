@@ -7,7 +7,6 @@ import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin } from "lucide-react";
 import { TastePicker, type TasteTag } from "@/components/PlaceTags";
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), {
@@ -43,7 +42,7 @@ export default function PlaceEditor({
 
   return (
     <form
-      className="space-y-4"
+      className="min-w-0 space-y-4"
       aria-label={`Modifier ${place.name}`}
       onKeyDown={(event) => {
         if (
@@ -126,6 +125,7 @@ export default function PlaceEditor({
               coordinates ? `${coordinates.lat},${coordinates.lng}` : "manual"
             }
             initialLocation={coordinates}
+            initialSelection={coordinates ? {name,address} : undefined}
             tourDate={tourDate}
             onLocationSelect={(
               selectedName,
@@ -145,10 +145,7 @@ export default function PlaceEditor({
             }}
           />
         </div>
-        <p className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/10 p-3 text-sm break-words">
-          <MapPin className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{address}</span>
-        </p>
+
         {openingHours && (
           <p className="text-sm text-amber-600">🕒 {openingHours}</p>
         )}

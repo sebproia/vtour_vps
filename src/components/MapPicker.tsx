@@ -6,7 +6,7 @@ import {
   Marker,
   Autocomplete,
 } from "@react-google-maps/api";
-import { Loader2, LocateFixed } from "lucide-react";
+import { Loader2, LocateFixed, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { openingHoursForDate, tourDay } from "../../convex/lib/schedule";
 const libraries: "places"[] = ["places"];
@@ -22,11 +22,13 @@ interface MapPickerProps {
     weeklyOpeningHours?: string[],
   ) => void;
   initialLocation?: Position;
+  initialSelection?: { name: string; address: string };
   tourDate?: string;
 }
 export default function MapPicker({
   onLocationSelect,
   initialLocation,
+  initialSelection,
   tourDate,
 }: MapPickerProps) {
   const { isLoaded, loadError } = useLoadScript({
@@ -54,6 +56,10 @@ export default function MapPicker({
   const autocomplete = useRef<google.maps.places.Autocomplete | null>(null);
   const map = useRef<google.maps.Map | null>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const [selectedPlace, setSelectedPlace] = useState<{
+    name: string;
+    address: string;
+  } | null>(initialSelection || null);
   const [selectionHint, setSelectionHint] = useState("");
   useEffect(() => {
     let cancelled = false;
@@ -115,6 +121,7 @@ export default function MapPicker({
     const week = place.opening_hours?.weekday_text || [];
     setMapCenter(value);
     setMarker(value);
+    setSelectedPlace({ name: place.name || "Position sélectionnée", address });
     setSelectionHint(
       place.name ? "" : "Ajoute le nom du restaurant dans le champ ci-dessus.",
     );
@@ -143,6 +150,7 @@ export default function MapPicker({
     const value = { lat: event.latLng.lat(), lng: event.latLng.lng() };
     const placeId = (event as google.maps.IconMouseEvent).placeId;
     setMarker(value);
+    setSelectedPlace(null);
     setSelectionHint("");
     const geocode = () =>
       new google.maps.Geocoder().geocode(
@@ -198,7 +206,7 @@ export default function MapPicker({
       </div>
     );
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 w-full space-y-3">
       <Autocomplete
         onLoad={(instance) => {
           autocomplete.current = instance;
@@ -285,6 +293,19 @@ export default function MapPicker({
           Ma position
         </button>
       </div>
+      {selectedPlace && (
+        <div
+          role="status"
+          className="flex min-w-0 items-start gap-2 rounded-xl border-2 border-secondary/50 bg-secondary/10 p-3 text-sm text-foreground"
+        >
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 [overflow-wrap:anywhere]">
+            <p className="text-xs font-bold">Lieu sélectionné</p>
+            <p className="font-bold">{selectedPlace.name}</p>
+            <p className="mt-1 text-xs">{selectedPlace.address}</p>
+          </div>
+        </div>
+      )}
       {selectionHint && (
         <p role="status" className="text-sm text-foreground/75">
           {selectionHint}
