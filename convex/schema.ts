@@ -46,6 +46,10 @@ export default defineSchema({
     date: v.optional(v.string()),
     participantName: v.optional(v.string()),
     savedAt: v.number(),
+    route: v.optional(v.array(v.object({
+      address: v.string(),
+      coordinates: v.optional(v.object({lat:v.number(),lng:v.number()})),
+    }))),
     places: v.array(v.object({
       name: v.string(), address: v.string(),
       googlePlaceId: v.optional(v.string()),
