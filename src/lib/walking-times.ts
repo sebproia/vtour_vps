@@ -1,5 +1,6 @@
 export interface RoutePlace {
   _id: string;
+  routeGroup?: string;
   address: string;
   coordinates?: { lat: number; lng: number };
 }
@@ -34,6 +35,7 @@ export async function calculateWalkingLegs(
   async function worker() {
     while (next < places.length - 1 && !cancelled()) {
       const index = next++;
+      if (places[index].routeGroup !== places[index + 1].routeGroup) continue;
       let result: WalkingLeg;
       try {
         const route = await lookup(places[index], places[index + 1]);

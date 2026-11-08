@@ -74,3 +74,21 @@ test("duration labels carry minutes into hours and keep multi-day walks explicit
   expect(formatWalkingTime(60)).toBe("1 min");
   expect(formatWalkingTime(176400)).toBe("2 j 1 h");
 });
+test("notebook routes never create walking legs between different tours", async () => {
+  const calls: string[] = [];
+  await calculateWalkingLegs(
+    [
+      { _id: "a1", address: "Paris", routeGroup: "a" },
+      { _id: "a2", address: "Paris2", routeGroup: "a" },
+      { _id: "b1", address: "Lyon", routeGroup: "b" },
+      { _id: "b2", address: "Lyon2", routeGroup: "b" },
+      { _id: "c1", address: "Nice", routeGroup: "c" },
+    ],
+    async (from, to) => {
+      calls.push(`${from._id}:${to._id}`);
+      return { seconds: 100, meters: 200 };
+    },
+    () => {},
+  );
+  expect(calls).toEqual(["a1:a2", "b1:b2"]);
+});

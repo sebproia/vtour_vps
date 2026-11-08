@@ -793,7 +793,7 @@ export default function TourDetails({ tourId }: { tourId: string }) {
             <Card className="border-2 border-border rounded-xl sm:rounded-2xl bg-card overflow-hidden">
               <CardContent className="p-4 sm:p-5 space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-bold font-display">Restaurant Name</label>
+                  <label className="text-sm font-bold font-display">Nom du restaurant</label>
                   <Input 
                     placeholder="e.g. Joe's Pizza" 
                     className="h-10 text-sm rounded-lg border-2"
